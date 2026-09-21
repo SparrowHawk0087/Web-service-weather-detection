@@ -86,7 +86,7 @@ warnflags = -Wall -Wextra -Wdeprecated-declarations -Wdiv-by-zero -Wduplicated-c
 cppflags = 
 CCDLFLAGS = -fPIC
 CFLAGS   = $(CCDLFLAGS) -g -O2 -Werror=implicit-function-declaration -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.3-3.3.8-2ubuntu3.1 -fPIC -fvisibility=hidden $(ARCH_FLAG)
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/include -I/home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/include -I/home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext
 DEFS     = 
 CPPFLAGS =  -Wdate-time -D_FORTIFY_SOURCE=3 $(DEFS) $(cppflags)
 CXXFLAGS = $(CCDLFLAGS) -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.3-3.3.8-2ubuntu3.1 $(ARCH_FLAG)

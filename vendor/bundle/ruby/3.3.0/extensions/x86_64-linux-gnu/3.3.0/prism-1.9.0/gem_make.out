@@ -1,15 +1,15 @@
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext/prism
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext/prism
 /usr/bin/ruby3.3 -I/usr/lib/ruby/vendor_ruby extconf.rb
-checking for prism.h in /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/include... yes
-checking for prism/extension.h in /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext... yes
+checking for prism.h in /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/include... yes
+checking for prism/extension.h in /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext... yes
 checking for whether -fvisibility=hidden is accepted as CFLAGS... yes
 creating Makefile
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext/prism
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-rl8e6r sitelibdir\=./.gem.20260921-7463-rl8e6r clean
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext/prism
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-bybmnl sitelibdir\=./.gem.20260921-9762-bybmnl clean
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext/prism
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-rl8e6r sitelibdir\=./.gem.20260921-7463-rl8e6r
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext/prism
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-bybmnl sitelibdir\=./.gem.20260921-9762-bybmnl
 compiling api_node.c
 compiling api_pack.c
 compiling ./../../src/diagnostic.c
@@ -40,9 +40,9 @@ compiling ./../../src/static_literals.c
 compiling ./../../src/token_type.c
 linking shared-object prism/prism.so
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext/prism
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-rl8e6r sitelibdir\=./.gem.20260921-7463-rl8e6r install
-/usr/bin/install -c -m 0755 prism.so ./.gem.20260921-7463-rl8e6r/prism
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext/prism
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-bybmnl sitelibdir\=./.gem.20260921-9762-bybmnl install
+/usr/bin/install -c -m 0755 prism.so ./.gem.20260921-9762-bybmnl/prism
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext/prism
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-rl8e6r sitelibdir\=./.gem.20260921-7463-rl8e6r clean
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/prism-1.9.0/ext/prism
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-bybmnl sitelibdir\=./.gem.20260921-9762-bybmnl clean

@@ -1,4 +1,4 @@
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/nio4r-2.7.5/ext/nio4r
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/nio4r-2.7.5/ext/nio4r
 /usr/bin/ruby3.3 -I/usr/lib/ruby/vendor_ruby extconf.rb
 checking for unistd.h... yes
 checking for rb_io_descriptor()... yes
@@ -12,11 +12,11 @@ checking for port_event_t in port.h... no
 checking for sys/resource.h... yes
 creating Makefile
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/nio4r-2.7.5/ext/nio4r
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-ez6tos sitelibdir\=./.gem.20260921-7463-ez6tos clean
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/nio4r-2.7.5/ext/nio4r
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-c5knmt sitelibdir\=./.gem.20260921-9762-c5knmt clean
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/nio4r-2.7.5/ext/nio4r
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-ez6tos sitelibdir\=./.gem.20260921-7463-ez6tos
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/nio4r-2.7.5/ext/nio4r
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-c5knmt sitelibdir\=./.gem.20260921-9762-c5knmt
 compiling bytebuffer.c
 compiling monitor.c
 compiling nio4r_ext.c
@@ -45,9 +45,9 @@ selector.c:525:5: warning: ignoring return value of ‘write’ declared with at
       |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 linking shared-object nio4r_ext.so
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/nio4r-2.7.5/ext/nio4r
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-ez6tos sitelibdir\=./.gem.20260921-7463-ez6tos install
-/usr/bin/install -c -m 0755 nio4r_ext.so ./.gem.20260921-7463-ez6tos
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/nio4r-2.7.5/ext/nio4r
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-c5knmt sitelibdir\=./.gem.20260921-9762-c5knmt install
+/usr/bin/install -c -m 0755 nio4r_ext.so ./.gem.20260921-9762-c5knmt
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/nio4r-2.7.5/ext/nio4r
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-ez6tos sitelibdir\=./.gem.20260921-7463-ez6tos clean
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/nio4r-2.7.5/ext/nio4r
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-c5knmt sitelibdir\=./.gem.20260921-9762-c5knmt clean

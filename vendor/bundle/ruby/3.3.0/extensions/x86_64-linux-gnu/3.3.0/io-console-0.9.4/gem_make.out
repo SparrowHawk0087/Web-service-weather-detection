@@ -1,4 +1,4 @@
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/io-console-0.9.4/ext/io/console
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/io-console-0.9.4/ext/io/console
 /usr/bin/ruby3.3 -I/usr/lib/ruby/vendor_ruby extconf.rb
 checking for rb_interned_str_cstr()... yes
 checking for rb_ractor_local_storage_value_newkey()... yes
@@ -18,17 +18,17 @@ checking for rb_prepend_module()... yes
 checking for gperf... no
 creating Makefile
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/io-console-0.9.4/ext/io/console
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-8hz3v sitelibdir\=./.gem.20260921-7463-8hz3v clean
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/io-console-0.9.4/ext/io/console
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-9w5uxv sitelibdir\=./.gem.20260921-9762-9w5uxv clean
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/io-console-0.9.4/ext/io/console
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-8hz3v sitelibdir\=./.gem.20260921-7463-8hz3v
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/io-console-0.9.4/ext/io/console
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-9w5uxv sitelibdir\=./.gem.20260921-9762-9w5uxv
 compiling console.c
 linking shared-object io/console.so
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/io-console-0.9.4/ext/io/console
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-8hz3v sitelibdir\=./.gem.20260921-7463-8hz3v install
-/usr/bin/install -c -m 0755 console.so ./.gem.20260921-7463-8hz3v/io
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/io-console-0.9.4/ext/io/console
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-9w5uxv sitelibdir\=./.gem.20260921-9762-9w5uxv install
+/usr/bin/install -c -m 0755 console.so ./.gem.20260921-9762-9w5uxv/io
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/io-console-0.9.4/ext/io/console
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-8hz3v sitelibdir\=./.gem.20260921-7463-8hz3v clean
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/io-console-0.9.4/ext/io/console
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-9w5uxv sitelibdir\=./.gem.20260921-9762-9w5uxv clean

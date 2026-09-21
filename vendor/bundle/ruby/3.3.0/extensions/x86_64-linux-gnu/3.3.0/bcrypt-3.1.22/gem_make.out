@@ -1,12 +1,12 @@
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/bcrypt-3.1.22/ext/mri
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/bcrypt-3.1.22/ext/mri
 /usr/bin/ruby3.3 -I/usr/lib/ruby/vendor_ruby extconf.rb
 creating Makefile
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/bcrypt-3.1.22/ext/mri
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-7daje sitelibdir\=./.gem.20260921-7463-7daje clean
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/bcrypt-3.1.22/ext/mri
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-9c18ve sitelibdir\=./.gem.20260921-9762-9c18ve clean
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/bcrypt-3.1.22/ext/mri
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-7daje sitelibdir\=./.gem.20260921-7463-7daje
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/bcrypt-3.1.22/ext/mri
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-9c18ve sitelibdir\=./.gem.20260921-9762-9c18ve
 compiling bcrypt_ext.c
 compiling crypt_blowfish.c
 compiling crypt_gensalt.c
@@ -17,9 +17,9 @@ wrapper.c:182:60: warning: ‘struct crypt_data’ declared inside parameter lis
 x86_64-linux-gnu-gcc  -D__SKIP_GNU -Wdate-time -D_FORTIFY_SOURCE=3    -c -o x86.o x86.S
 linking shared-object bcrypt_ext.so
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/bcrypt-3.1.22/ext/mri
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-7daje sitelibdir\=./.gem.20260921-7463-7daje install
-/usr/bin/install -c -m 0755 bcrypt_ext.so ./.gem.20260921-7463-7daje
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/bcrypt-3.1.22/ext/mri
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-9c18ve sitelibdir\=./.gem.20260921-9762-9c18ve install
+/usr/bin/install -c -m 0755 bcrypt_ext.so ./.gem.20260921-9762-9c18ve
 
-current directory: /home/kirill/backend-api/vendor/bundle/ruby/3.3.0/gems/bcrypt-3.1.22/ext/mri
-make DESTDIR\= sitearchdir\=./.gem.20260921-7463-7daje sitelibdir\=./.gem.20260921-7463-7daje clean
+current directory: /home/kirill/Web-service-weather-detection/backend-api/vendor/bundle/ruby/3.3.0/gems/bcrypt-3.1.22/ext/mri
+make DESTDIR\= sitearchdir\=./.gem.20260921-9762-9c18ve sitelibdir\=./.gem.20260921-9762-9c18ve clean
