@@ -2,6 +2,7 @@ class SessionsController < ApplicationController
   
   # Log in - opened (client doesn't have token yet)
   # Log out - only auth client
+  before_action :authenticate_request, only: :destroy
   
   # POST/login - endpoint
   def create

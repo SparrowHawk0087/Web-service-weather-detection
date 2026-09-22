@@ -1,0 +1,19 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  username: chessman
+  password: 070606Vob007
+  host: 127.0.0.1
+
+development:
+  <<: *default
+  database: web_service_weather_detection_development
+
+test:
+  <<: *default
+  database: web_service_weather_detection_test
+
+production:
+  <<: *default
+  database: web_service_weather_detection_production
