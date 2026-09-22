@@ -52,4 +52,5 @@ group :development, :test do
   # Additional gems
   gem "bcrypt"      # hashing passswords (has_secure_password)
   gem "rack-cors"   # permit origin fronted requests
+  gem "json", "< 3.0"
 end
