@@ -1,4 +1,7 @@
-function Login() {
+import { Link } from  'react-router-dom'
+
+
+function LoginPage() {
     return (
         <form>
             <h1>Enter</h1>
@@ -12,10 +15,10 @@ function Login() {
             </label>
             <button type="submit">Login</button>
             <p>
-                No account?<a href="/register">Registration</a>
+                No account?<Link to="/register">Registration</Link>
             </p>
         </form>
     )
 }
 
-export default Login
+export default LoginPage

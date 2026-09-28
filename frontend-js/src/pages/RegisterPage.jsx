@@ -1,4 +1,7 @@
-function Register() {
+import { Link } from  'react-router-dom'
+
+
+function RegisterPage() {
     return (
         <form>
       <h1>Registration</h1>
@@ -26,12 +29,12 @@ function Register() {
       <button type="submit">Register</button>
 
       <p>
-        Have an account? <a href="/login">Login</a>
+        Have an account? <Link to="/login">Login</Link>
       </p>
     </form>
     )
 }
 
-export default Register 
+export default RegisterPage
 
 
