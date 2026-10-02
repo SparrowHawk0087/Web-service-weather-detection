@@ -1,4 +1,4 @@
-import { Link } from  'react-router-dom'
+import { Link, useNavigate } from  'react-router-dom'
 import { useState } from 'react'
 
 function LoginPage() {
@@ -9,6 +9,9 @@ function LoginPage() {
         }
     ) 
 
+    const [error, setError] = useState('')
+    const navigate = useNavigate()
+
     const setChange = (e) => {
         setForm({
             ...form,
@@ -16,11 +19,26 @@ function LoginPage() {
         })
     }
 
-    console.log(form);
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        setError('')    // reset the old error
+        if (!form.email || !form.password) {
+            setError('Fill all fields')
+            return
+        }
+
+        console.log(form);
+
+        // temporary navigation route for testing the operation of handlers
+        navigate('/register')
+    }
 
     return (
-        <form>
+        <form onSubmit={handleSubmit}>
             <h1>Enter</h1>
+            
+            {error && <p>{error}</p>}
+
             <label>
                 Email 
                 <input 
