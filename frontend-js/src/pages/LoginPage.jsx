@@ -1,5 +1,6 @@
 import { Link, useNavigate } from  'react-router-dom'
 import { useState } from 'react'
+import { login } from '../api/auth'
 
 function LoginPage() {
 
@@ -10,6 +11,7 @@ function LoginPage() {
     ) 
 
     const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
 
     const setChange = (e) => {
@@ -19,7 +21,7 @@ function LoginPage() {
         })
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
         setError('')    // reset the old error
         if (!form.email || !form.password) {
@@ -27,10 +29,27 @@ function LoginPage() {
             return
         }
 
-        console.log(form);
+        setLoading(true)
 
-        // temporary navigation route for testing the operation of handlers
-        navigate('/register')
+        try {
+            const data = await login(form.email, form.password)
+            localStorage.setItem('token', data.token)
+            navigate('/profile')
+        } catch (err) {
+            console.log('>>> login error: ', err.response?.status, err.response?.data)
+
+            const raw = 
+                err.response?.data?.errors ||
+                err.response?.data?.error
+
+            const message = Array.isArray(raw)
+            ? raw.join(", ")
+            : raw || "wrong email or password"
+
+            setError(message)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -57,7 +76,9 @@ function LoginPage() {
                     onChange={setChange}
                 />
             </label>
-            <button type="submit">Login</button>
+            <button type="submit" disabled={loading}>
+                {loading ? 'Checking...' : 'Enter'}
+            </button>
             <p>
                 No account? <Link to="/register">Registration</Link>
             </p>

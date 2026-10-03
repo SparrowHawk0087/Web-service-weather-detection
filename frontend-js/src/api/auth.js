@@ -25,7 +25,7 @@ export const login = async (email, password) => {
     return response.data
 }
 
-export const logut = async () => {
+export const logout = async () => {
     await api.delete('/logout')
 }
 

@@ -1,5 +1,6 @@
 import { Link, useNavigate } from  'react-router-dom'
 import { useState } from 'react'
+import { register } from '../api/auth'
 
 
 function RegisterPage() {
@@ -12,6 +13,7 @@ function RegisterPage() {
     })
 
     const [error, setError] = useState()
+    const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
 
     const setChange = (e) => {
@@ -21,7 +23,7 @@ function RegisterPage() {
         })
     }
 
-    const handleSubmit = (e) =>{
+    const handleSubmit = async (e) =>{
         e.preventDefault()
         setError('')    // reset the old error
 
@@ -40,9 +42,21 @@ function RegisterPage() {
             return
         }
 
-        console.log('Registration. Sended data: ', form);
-        // temporary navigation route for testing the operation of handlers
-        navigate('/login')
+        setLoading(true)
+
+        try {
+            const data = await register(form)
+            localStorage.setItem('token', data.token)
+            navigate('/profile')
+        } catch (err) {
+            const message = 
+                err.response?.data?.errors?.join(', ') ||
+                err.response?.data?.error ||
+                "Failed to sign up"
+            setError(message)
+        } finally {
+            setLoading(false)
+        }
     }
 
     
@@ -92,7 +106,9 @@ function RegisterPage() {
                 />
             </label>
 
-            <button type="submit">Register</button>
+            <button type="submit" disabled={loading}>
+                { loading? 'Sending...' :  'Sign up' }
+            </button>
 
             <p>
                 Have an account? <Link to="/login">Login</Link>
