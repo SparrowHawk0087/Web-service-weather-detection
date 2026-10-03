@@ -10,23 +10,43 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true)
 
     // first render reloads saved data from localStorage
-    useEffect (() => {
+    useEffect(() => {
         const savedToken = localStorage.getItem('token')
-        const savedUser =localStorage.getItem('user')
-        
-        if (savedToken) {
-            setToken(savedToken)
+        const savedUser = localStorage.getItem('user')
+
+        if (!savedToken) {
+            setLoading(false)
+            return
         }
 
+        setToken(savedToken)
         if (savedUser) {
             try {
                 setUser(JSON.parse(savedUser))
-            } catch (err) {
-                console.log("Couldn't read user from localStorage", err)
+            } catch (e) {
+            console.log('Could not read user from localStorage', e)
             }
         }
 
-        setLoading(false)
+        // Checking token on server for dividing expired
+        authApi
+            .getProfile()
+            .then((data) => {
+            setUser(data)
+            localStorage.setItem('user', JSON.stringify(data))
+            })
+            .catch((err) => {
+                console.log('>>> the token failed verification:', err.response?.status)
+                if (err.response?.status === 401) {
+                    localStorage.removeItem('token')
+                    localStorage.removeItem('user')
+                    setToken(null)
+                    setUser(null)
+                }
+            })
+            .finally(() => {
+                setLoading(false)
+            })
     }, [])
 
     const login = async (email, password) => {
