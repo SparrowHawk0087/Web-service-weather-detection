@@ -1,55 +1,53 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { getProfile, logout } from '../api/auth'
+import { getProfile } from '../api/auth'
+import { useAuth } from '../context/AuthContext'
 
 function ProfilePage() {
 
-    const [profile, setProfile] = useState(null)
+    const { user, setUser, logout } = useAuth()
     const [error, setError] = useState('')
-    const [loading, setLoading] = useState(true)
+    const [checking, setChecking] = useState(!user)
     const navigate = useNavigate()
 
     useEffect(() => {
+
+        if (user) return
+
         const load = async () => {
             try {
                 const data = await getProfile()
-                setProfile(data)
+                setUser(data)
             } catch (err) {
                 console.log('>>> error getProfile:', err.response?.status, err.response?.data)
                 if (err.response?.status == 401) {
                     // token is expired or wrong
-                    localStorage.removeItem('token')
+                    await logout(true)
                     navigate('/login')
                 } else {
                     setError("Couldn't upload profile")
                 }
             } finally {
-                setLoading(false)
+                setChecking(false)
             }
         }
         load()
-    }, [navigate])
+    }, [user, setUser, logout, navigate])
 
     const handleLogout = async () => {
-        try {
             await logout()
-        } catch(err) {
-            console.log('>>> error logout:', err)
-        } finally {
-            localStorage.removeItem('token')
             navigate('/login')
-        }
     }
 
-    if (loading) return <p>Loading...</p>;
+    if (checking) return <p>Checking...</p>;
     if (error) return <p>{error}</p>;
-    if (!profile) return <p>No data</p>;
+    if (!user) return <p>No data</p>;
 
     return(
         <div>
-            <p><strong>ID:</strong> {profile.id}</p>
-            <p><strong>Nickname:</strong> {profile.name}</p>
-            <p><strong>Email:</strong> {profile.email}</p>
+            <p><strong>ID:</strong> {user.id}</p>
+            <p><strong>Nickname:</strong> {user.name}</p>
+            <p><strong>Email:</strong> {user.email}</p>
             <button onClick={handleLogout}>Log out</button>
         </div>
     )

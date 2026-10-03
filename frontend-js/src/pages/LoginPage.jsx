@@ -1,6 +1,7 @@
 import { Link, useNavigate } from  'react-router-dom'
 import { useState } from 'react'
-import { login } from '../api/auth'
+import { useAuth } from '../context/AuthContext'
+
 
 function LoginPage() {
 
@@ -13,6 +14,7 @@ function LoginPage() {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
+    const { login } = useAuth()    // take func login from context
 
     const setChange = (e) => {
         setForm({
@@ -32,8 +34,7 @@ function LoginPage() {
         setLoading(true)
 
         try {
-            const data = await login(form.email, form.password)
-            localStorage.setItem('token', data.token)
+            await login(form.email, form.password)
             navigate('/profile')
         } catch (err) {
             console.log('>>> login error: ', err.response?.status, err.response?.data)

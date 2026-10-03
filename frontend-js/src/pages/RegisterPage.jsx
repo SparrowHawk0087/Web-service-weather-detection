@@ -1,7 +1,6 @@
 import { Link, useNavigate } from  'react-router-dom'
 import { useState } from 'react'
-import { register } from '../api/auth'
-
+import { useAuth } from '../context/AuthContext'
 
 function RegisterPage() {
 
@@ -15,6 +14,7 @@ function RegisterPage() {
     const [error, setError] = useState()
     const [loading, setLoading] = useState(false)
     const navigate = useNavigate()
+    const { register } = useAuth()      // take func register from context
 
     const setChange = (e) => {
         setForm({
@@ -45,8 +45,7 @@ function RegisterPage() {
         setLoading(true)
 
         try {
-            const data = await register(form)
-            localStorage.setItem('token', data.token)
+            await register(form)
             navigate('/profile')
         } catch (err) {
             const message = 
