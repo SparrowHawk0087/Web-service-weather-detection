@@ -1,11 +1,41 @@
+import LoginPage from './pages/LoginPage.jsx'
+import RegisterPage from './pages/RegisterPage.jsx'
+import ProfilePage from './pages/ProfilePage.jsx'
+import PrivateRoute from './components/PrivateRoute.jsx'
+import PublicRoute from './components/PublicRoute.jsx';
+import './App.css'
+import { Routes, Route, Link, Navigate } from 'react-router-dom'
+
 function App() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-400 to-indigo-600 text-white">
-      <div className="p-8 bg-white/10 backdrop-blur-md rounded-2xl shadow-xl text-center border border-white/20">
-        <h1 className="text-3xl font-bold mb-2">Weather App 🌤️</h1>
-        <p className="text-blue-100">Vite + React + Tailwind v4 успешно запущены!</p>
-      </div>
-    </div>
+    <Routes>
+        <Route 
+            path="/login"
+            element={
+            <PublicRoute>
+                <LoginPage />
+            </PublicRoute>
+            } 
+        />
+        <Route 
+            path="/register"
+            element={
+                <PublicRoute>
+                    <RegisterPage />
+                </PublicRoute>
+            } 
+        />
+        <Route
+            path="/profile"
+            element={
+                <PrivateRoute>
+                    <ProfilePage />
+                </PrivateRoute>
+                
+            }
+        />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   )
 }
 
