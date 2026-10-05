@@ -1,40 +1,40 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react'
+import Sidebar from '../components/dashboard/Sidebar'
+import DropZone from '../components/dashboard/DropZone'
 
 export default function DashboardPage() {
+  const [file, setFile] = useState(null)
+
+  const handleNewAnalysis = () => {
+    setFile(null)
+  }
+
   return (
-    <div className="min-h-screen flex bg-[#0a0b10] text-white">
+    <div className="h-screen flex bg-[#0a0b10] text-white overflow-hidden">
+      <Sidebar onNewAnalysis={handleNewAnalysis} />
 
-      {/* Left panel - Sidebar */}
-      <aside className="w-[280px] shrink-0 bg-black/40 border-r border-white/10 p-4 flex flex-col">
-        <div className="text-white/40 text-sm">sidebar (history soon)</div>
-      </aside>
-
-      {/* Main area */}
-      <main className="relative flex-1 p-6 flex flex-col items-center justify-center">
-
-        {/* Save Result (plug) */}
-        <div className="absolute top-6 right-6">
+      <main className="relative flex-1 p-6 flex flex-col items-center justify-center overflow-y-auto">
+        {/* Save Result */}
+        <div className="absolute top-6 right-6 z-10">
           <button
             type="button"
-            className="px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/70 text-sm hover:bg-white/20"
+            disabled={!file}
+            className="px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/70 text-sm hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             Save Result
           </button>
         </div>
 
-        {/* Drop zone (plug) */}
-        <div className="w-full max-w-2xl h-[400px] rounded-3xl border-2 border-dashed border-white/20 bg-white/[0.03] flex items-center justify-center">
-          <span className="text-white/40">drag & drop area</span>
-        </div>
+        <DropZone file={file} onChange={setFile} />
 
-        {/* Demo mode (plug) */}
+        {/* Demo mode */}
         <button
           type="button"
-          className="absolute bottom-6 right-6 w-20 h-20 rounded-full bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-200"
+          className="absolute bottom-6 right-6 w-20 h-20 rounded-full bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-200 text-sm hover:bg-purple-500/30 transition"
         >
           Demo
         </button>
       </main>
     </div>
-  );
+  )
 }
