@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import Sidebar from '../components/dashboard/Sidebar'
 import DropZone from '../components/dashboard/DropZone'
+import FeedbackModal from '../components/dashboard/FeedbackModal'
 
 export default function DashboardPage() {
   const [file, setFile] = useState(null)
+  const [modelId, setModelId] = useState('vision-v1')
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   const handleNewAnalysis = () => {
     setFile(null)
+    setModelId('vision-v1')
   }
 
   return (
@@ -14,7 +18,6 @@ export default function DashboardPage() {
       <Sidebar onNewAnalysis={handleNewAnalysis} />
 
       <main className="relative flex-1 p-6 flex flex-col items-center justify-center overflow-y-auto">
-        {/* Save Result */}
         <div className="absolute top-6 right-6 z-10">
           <button
             type="button"
@@ -25,9 +28,14 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <DropZone file={file} onChange={setFile} />
+        <DropZone
+          file={file}
+          onChange={setFile}
+          modelId={modelId}
+          onModelChange={setModelId}
+          onReportIssue={() => setFeedbackOpen(true)}
+        />
 
-        {/* Demo mode */}
         <button
           type="button"
           className="absolute bottom-6 right-6 w-20 h-20 rounded-full bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-200 text-sm hover:bg-purple-500/30 transition"
@@ -35,6 +43,12 @@ export default function DashboardPage() {
           Demo
         </button>
       </main>
+
+      <FeedbackModal
+        isOpen={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+        file={file}
+      />
     </div>
   )
 }
