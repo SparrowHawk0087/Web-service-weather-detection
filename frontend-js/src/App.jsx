@@ -2,10 +2,11 @@ import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import PrivateRoute from './components/PrivateRoute.jsx'
-import PublicRoute from './components/PublicRoute.jsx';
+import PublicRoute from './components/PublicRoute.jsx'
 import './App.css'
 import { Routes, Route, Link, Navigate } from 'react-router-dom'
-import DashboardPage from './pages/DashboardPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx'
+import AboutPage from './pages/AboutPage'
 
 function App() {
   return (
@@ -45,6 +46,9 @@ function App() {
                 
             }
         />
+        
+        <Route path="/about" element={<AboutPage />} />
+
         <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
