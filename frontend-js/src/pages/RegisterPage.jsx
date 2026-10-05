@@ -53,7 +53,7 @@ function RegisterPage() {
 
         try {
             await register(form)
-            navigate('/profile')
+            navigate('/dashboard')
         } catch (err) {
             const message = 
                 err.response?.data?.errors?.join(', ') ||

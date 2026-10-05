@@ -5,6 +5,7 @@ import PrivateRoute from './components/PrivateRoute.jsx'
 import PublicRoute from './components/PublicRoute.jsx';
 import './App.css'
 import { Routes, Route, Link, Navigate } from 'react-router-dom'
+import DashboardPage from './pages/DashboardPage.jsx';
 
 function App() {
   return (
@@ -25,6 +26,16 @@ function App() {
                 </PublicRoute>
             } 
         />
+
+        <Route 
+            path="/dashboard"
+            element={
+                <PrivateRoute>
+                    <DashboardPage />
+                </PrivateRoute>
+            }
+        />
+
         <Route
             path="/profile"
             element={

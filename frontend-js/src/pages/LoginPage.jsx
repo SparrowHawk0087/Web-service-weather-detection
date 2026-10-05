@@ -40,7 +40,7 @@ function LoginPage() {
 
         try {
             await login(form.email, form.password)
-            navigate('/profile')
+            navigate('/dashboard')
         } catch (err) {
             console.log('>>> login error: ', err.response?.status, err.response?.data)
 
