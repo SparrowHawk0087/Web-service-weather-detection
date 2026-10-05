@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'
 
 const MODELS = [
   { id: 'vision-v1', label: 'Weather Vision v1' },
@@ -9,16 +9,16 @@ const MODELS = [
 export default function ModelAccordion({ value, onChange, disabled }) {
   const [open, setOpen] = useState(false);
 
-  const selected = MODELS.find((m) => m.id === value) || MODELS[0];
+  const selected = MODELS.find((m) => m.id === value) || MODELS[0]
 
   const handleToggle = () => {
-    if (disabled) return;
-    setOpen((s) => !s);
-  };
+    if (disabled) return
+    setOpen((s) => !s)
+  }
 
   const handleSelect = (id) => {
-    onChange(id);
-    setOpen(false);
+    onChange(id)
+    setOpen(false)
   };
 
   return (
@@ -83,5 +83,5 @@ export default function ModelAccordion({ value, onChange, disabled }) {
         </div>
       )}
     </div>
-  );
+  )
 }

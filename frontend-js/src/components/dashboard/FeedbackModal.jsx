@@ -1,73 +1,73 @@
-import { useEffect, useRef } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef } from 'react'
+import { useState } from 'react'
 
 export default function FeedbackModal({ isOpen, onClose, file }) {
-  const [text, setText] = useState('');
-  const [preview, setPreview] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const textareaRef = useRef(null);
+  const [text, setText] = useState('')
+  const [preview, setPreview] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+  const textareaRef = useRef(null)
 
   // file preview
   useEffect(() => {
     if (!isOpen || !file) {
-      setPreview(null);
-      return;
+      setPreview(null)
+      return
     }
 
-    const isImage = file.type.startsWith('image/');
+    const isImage = file.type.startsWith('image/')
     if (!isImage) {
-      setPreview(null);
-      return;
+      setPreview(null)
+      return
     }
 
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [isOpen, file]);
+    const url = URL.createObjectURL(file)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [isOpen, file])
 
   // close hotkey Esc + block scroll
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return
 
     const handleKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onClose()
     };
-    document.addEventListener('keydown', handleKey);
-    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKey)
+    document.body.style.overflow = 'hidden'
 
     // focus on textarea while opening
-    textareaRef.current?.focus();
+    textareaRef.current?.focus()
 
     return () => {
       document.removeEventListener('keydown', handleKey);
-      document.body.style.overflow = '';
+      document.body.style.overflow = ''
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose])
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!text.trim()) return;
+    e.preventDefault()
+    if (!text.trim()) return
 
-    setSubmitting(true);
+    setSubmitting(true)
     try {
       // TODO: add API endpoint
       console.log('>>> feedback submitted:', {
         file: file?.name,
         text: text.trim(),
-      });
-      setText('');
-      onClose();
+      })
+      setText('')
+      onClose()
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
   };
 
   // overlay click - close, card click - don't close 
   const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onClose();
-  };
+    if (e.target === e.currentTarget) onClose()
+  }
 
   return (
     <div
