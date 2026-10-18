@@ -30,7 +30,9 @@ class UpgradeUsersForPhase1 < ActiveRecord::Migration[8.1]
     add_index :users, :deleted_at, where: "deleted_at IS NULL", name: "idx_users_active"
     add_index :users, :anonymized_at, where: "anonymized_at IS NOT NULL", name: "idx_users_anonymized"
 
-    add_check_constraint :users, "role IN ('user','moderator','admin')", name: "users_role_check"
+    # user / admin
+    add_check_constraint :users, "role IN ('user','admin')", name: "users_role_check"
+
     add_check_constraint :users,
       "anonymized_at IS NULL OR (email IS NULL AND name IS NULL AND password_digest IS NULL)",
       name: "users_anonymized_no_pii"
