@@ -2,7 +2,7 @@ class ProfileController < ApplicationController
   
   # all controller is closed without valid token
   # gets 401 and action doesn't start
-  before_action :authenticate_request
+  before_action :authenticate_request, only: :destroy
 
   # GET/profile
   def show
