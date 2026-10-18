@@ -73,9 +73,13 @@ RSpec.describe Prediction, type: :model do
       prediction.update!(confidence: 0.7)
       expect(prediction).not_to be_low_confidence
     end
+    it "#low_confidence? false без confidence (статус ещё не completed)" do
+      prediction.update!(status: "processing", confidence: nil, weather_condition: condition)
+      expect(prediction).not_to be_low_confidence
+    end
 
-    it "#low_confidence? false без confidence или условия" do
-      prediction.update!(status: "completed", confidence: nil, weather_condition: condition)
+    it "#low_confidence? false без weather_condition (даже если confidence низкий)" do
+      prediction.update!(status: "completed", confidence: 0.3, weather_condition: nil)
       expect(prediction).not_to be_low_confidence
     end
   end

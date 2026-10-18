@@ -5,11 +5,13 @@ FactoryBot.define do
     password { "password123" }
     role     { "user" }
 
-    trait :admin { role { "admin" } }
+    trait :admin do
+      role { "admin" }
+    end
   end
 
   factory :weather_condition do
-    sequence(:code) { |n| "CODE_#{n}" }
+    sequence(:code) { |n| "C#{('A'..'Z').to_a[n / 26]}#{('A'..'Z').to_a[n % 26]}" }
     min_confidence { 0.6 }
     active         { true }
     display_order  { 1 }

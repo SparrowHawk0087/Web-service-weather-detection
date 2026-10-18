@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe AuthToken, type: :model do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:user) { create(:user) }
 
   describe ".issue" do

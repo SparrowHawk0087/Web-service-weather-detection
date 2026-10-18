@@ -54,4 +54,6 @@ group :development, :test do
   gem "rack-cors"   # permit origin fronted requests
   gem "json", "< 3.0"
   gem "rspec-rails", "~> 8.0.4"
+  gem 'factory_bot_rails'
+  gem 'faker'
 end
