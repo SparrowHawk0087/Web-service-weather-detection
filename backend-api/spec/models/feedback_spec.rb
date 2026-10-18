@@ -1,20 +1,20 @@
 require "rails_helper"
 
 RSpec.describe Feedback, type: :model do
-  let(:moderator) { create(:user, :moderator) }
-  let(:feedback)  { create(:feedback, status: "new") }
+  let(:reviewer) { create(:user, :admin) }
+  let(:feedback) { create(:feedback, status: "new") }
 
   describe "status transitions" do
     it "new → triaged" do
-      feedback.triage!(reviewer: moderator)
+      feedback.triage!(reviewer: reviewer)
       expect(feedback.reload.status).to eq("triaged")
-      expect(feedback.reviewer).to eq(moderator)
+      expect(feedback.reviewer).to eq(reviewer)
     end
 
     it "triaged → in_progress → resolved с заметкой" do
-      feedback.triage!(reviewer: moderator)
-      feedback.start_work!(reviewer: moderator)
-      feedback.resolve!(reviewer: moderator, note: "модель переобучена")
+      feedback.triage!(reviewer: reviewer)
+      feedback.start_work!(reviewer: reviewer)
+      feedback.resolve!(reviewer: reviewer, note: "модель переобучена")
       feedback.reload
       expect(feedback.status).to eq("resolved")
       expect(feedback.resolution_note).to eq("модель переобучена")
@@ -22,22 +22,22 @@ RSpec.describe Feedback, type: :model do
     end
 
     it "resolved → in_progress (reopen)" do
-      feedback.triage!(reviewer: moderator)
-      feedback.start_work!(reviewer: moderator)
-      feedback.resolve!(reviewer: moderator)
-      feedback.reopen!(reviewer: moderator)
+      feedback.triage!(reviewer: reviewer)
+      feedback.start_work!(reviewer: reviewer)
+      feedback.resolve!(reviewer: reviewer)
+      feedback.reopen!(reviewer: reviewer)
       expect(feedback.reload.status).to eq("in_progress")
     end
 
     it "из new нельзя сразу в resolved" do
-      expect { feedback.resolve!(reviewer: moderator) }.to raise_error(Feedback::InvalidTransition)
+      expect { feedback.resolve!(reviewer: reviewer) }.to raise_error(Feedback::InvalidTransition)
       expect(feedback.reload.status).to eq("new")
     end
 
     it "из wont_fix нельзя никуда" do
-      feedback.triage!(reviewer: moderator)
-      feedback.wont_fix!(reviewer: moderator)
-      expect { feedback.resolve!(reviewer: moderator) }.to raise_error(Feedback::InvalidTransition)
+      feedback.triage!(reviewer: reviewer)
+      feedback.wont_fix!(reviewer: reviewer)
+      expect { feedback.resolve!(reviewer: reviewer) }.to raise_error(Feedback::InvalidTransition)
     end
   end
 

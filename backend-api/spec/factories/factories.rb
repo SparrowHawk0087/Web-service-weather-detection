@@ -5,7 +5,7 @@ FactoryBot.define do
     password { "password123" }
     role     { "user" }
 
-    trait :moderator { role { "moderator" } }
+    trait :admin { role { "admin" } }
   end
 
   factory :weather_condition do
