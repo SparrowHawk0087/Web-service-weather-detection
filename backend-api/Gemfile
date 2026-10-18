@@ -53,4 +53,5 @@ group :development, :test do
   gem "bcrypt"      # hashing passswords (has_secure_password)
   gem "rack-cors"   # permit origin fronted requests
   gem "json", "< 3.0"
+  gem "rspec-rails", "~> 8.0.4"
 end
