@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Mock ML Weather Detection Service")
 
-# Разрешаем запросы с фронтенда и бэкенда
+# Разрешаем запросы с фронтенда и бэкенда (настраиваем CORS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # В продакшене заменить на конкретные домены
@@ -15,10 +15,9 @@ app.add_middleware(
 )
 
 WEATHER_CLASSES = [
-    {"class": "clear", "label": "Ясно", "confidence_range": (0.85, 0.99)},
     {"class": "rain", "label": "Дождь", "confidence_range": (0.75, 0.95)},
     {"class": "snow", "label": "Снег", "confidence_range": (0.80, 0.98)},
-    {"class": "fog", "label": "Туман", "confidence_range": (0.70, 0.90)},
+    {"class": "fog",  "label": "Туман", "confidence_range": (0.70, 0.90)},
 ]
 
 @app.post("/predict")
