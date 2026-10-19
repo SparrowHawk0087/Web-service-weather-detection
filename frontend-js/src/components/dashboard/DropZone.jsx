@@ -7,69 +7,76 @@ export default function DropZone({
   modelId,
   onModelChange,
   onReportIssue,
+  loading = false,
+  prediction = null,
+  error = null,
 }) {
+  const [isDragging, setIsDragging] = useState(false)
+  const [preview, setPreview] = useState(null)
+  const inputRef = useRef(null)
 
-    const [isDragging, setIsDragging] = useState(false)
-    const [preview, setPreview] = useState(null)
-    const inputRef = useRef(null)
-
-    // create or revoke the URL for the preview when the file changes
-    useEffect(() => {
-        if (!file) {
-            setPreview(null)
-            return
-        }
-
-        const isImage = file.type.startsWith('image/')
-            if (!isImage) {
-            setPreview(null)
-            return
-        }
-
-        const url = URL.createObjectURL(file)
-        setPreview(url)
-
-        // clean memory when file is deleted or changed 
-        return () => URL.revokeObjectURL(url)
-    }, [file])
-
-    const handleClick = () => {
-        inputRef.current?.click()
+  useEffect(() => {
+    if (!file) {
+      setPreview(null)
+      return
     }
 
-    const handleInputChange = (e) => {
-        const picked = e.target.files?.[0]
-            if (picked) onChange(picked)
-            // resetting the value so that the same file can be selected again
-            e.target.value = ''
+    const isImage = file.type.startsWith('image/')
+    if (!isImage) {
+      setPreview(null)
+      return
     }
 
-    const handleDragOver = (e) => {
-        e.preventDefault()
-        setIsDragging(true)
+    const url = URL.createObjectURL(file)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
+  const handleClick = () => {
+    if (loading) return
+    inputRef.current?.click()
+  }
+
+  const handleInputChange = (e) => {
+    const picked = e.target.files?.[0]
+    if (picked) onChange(picked)
+    e.target.value = ''
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const dropped = e.dataTransfer.files?.[0]
+    if (dropped) onChange(dropped)
+  }
+
+  const clearFile = (e) => {
+    e.stopPropagation()
+    onChange(null)
+  }
+
+  // Определяем цвет для бейджа погоды
+  const getWeatherColor = (code) => {
+    const colors = {
+      'RAIN': 'from-blue-500 to-cyan-500',
+      'SNOW': 'from-cyan-400 to-blue-300',
+      'FOG': 'from-gray-400 to-slate-500',
     }
+    return colors[code] || 'from-purple-500 to-fuchsia-500'
+  }
 
-    const handleDragLeave = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
-    }
-
-    const handleDrop = (e) => {
-        e.preventDefault()
-        setIsDragging(false)
-
-        const dropped = e.dataTransfer.files?.[0]
-        if (dropped) onChange(dropped)
-    }
-
-    const clearFile = (e) => {
-        e.stopPropagation() // block handleClick
-        onChange(null)
-    }
-
-      return (
+  return (
     <div className="w-full max-w-2xl flex flex-col gap-3">
-
       {/* main drop zone */}
       <div
         onClick={handleClick}
@@ -80,7 +87,8 @@ export default function DropZone({
           relative w-full h-[420px] rounded-3xl
           border-2 border-dashed
           flex flex-col items-center justify-center
-          cursor-pointer transition-all
+          transition-all overflow-hidden
+          ${loading ? 'cursor-wait' : 'cursor-pointer'}
           ${
             isDragging
               ? 'border-purple-400 bg-purple-500/10 scale-[1.01]'
@@ -91,13 +99,23 @@ export default function DropZone({
         <input
           ref={inputRef}
           type="file"
-          accept="image/png,image/jpeg,image/jpg,.zip"
+          accept="image/png,image/jpeg,image/jpg"
           onChange={handleInputChange}
           className="hidden"
         />
 
+        {/* СОСТОЯНИЕ ЗАГРУЗКИ */}
+        {loading && (
+          <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+            <div className="w-16 h-16 rounded-full border-4 border-purple-400/30 border-t-purple-400 animate-spin" />
+            <p className="text-white text-sm font-medium">
+              Анализируем изображение...
+            </p>
+          </div>
+        )}
+
         {file ? (
-          <div className="w-full h-full p-6 flex flex-col items-center justify-center gap-4">
+          <div className="w-full h-full p-6 flex flex-col items-center justify-center gap-4 relative">
             {preview ? (
               <img
                 src={preview}
@@ -121,13 +139,51 @@ export default function DropZone({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={clearFile}
-              className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/70 text-xs hover:bg-white/20 transition"
-            >
-              Remove
-            </button>
+            {/* РЕЗУЛЬТАТ ПРЕДСКАЗАНИЯ */}
+            {prediction && !loading && (
+              <div className={`absolute bottom-6 left-6 right-6 rounded-2xl bg-gradient-to-r ${getWeatherColor(prediction.weather_code)} p-4 shadow-lg`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white/80 text-xs uppercase tracking-wider mb-1">
+                      Результат
+                    </p>
+                    <p className="text-white text-2xl font-bold">
+                      {prediction.weather_condition}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white/80 text-xs uppercase tracking-wider mb-1">
+                      Уверенность
+                    </p>
+                    <p className="text-white text-2xl font-bold">
+                      {(prediction.confidence * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ОШИБКА */}
+            {error && !loading && (
+              <div className="absolute bottom-6 left-6 right-6 rounded-2xl bg-red-500/20 border border-red-400/40 p-4">
+                <p className="text-red-300 text-sm text-center">{error}</p>
+              </div>
+            )}
+
+            {/* Кнопка удаления */}
+            {!loading && (
+              <button
+                type="button"
+                onClick={clearFile}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition"
+                aria-label="Remove"
+              >
+                <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4 text-center px-6 pointer-events-none">
@@ -137,28 +193,28 @@ export default function DropZone({
               </svg>
             </div>
             <div>
-              <p className="text-white text-sm">Drag & drop photo or archive here</p>
+              <p className="text-white text-sm">Drag & drop photo here</p>
               <p className="text-white/40 text-xs mt-1">or click to browse</p>
             </div>
-            <p className="text-white/30 text-xs">png, jpeg, jpg & zip</p>
+            <p className="text-white/30 text-xs">png, jpeg, jpg</p>
           </div>
         )}
       </div>
 
-      {/* bottom block: accordeon + Model was wrong */}
+      {/* bottom block: accordion + Model was wrong */}
       <div className="flex items-center gap-3">
         <div className="flex-1">
           <ModelAccordion
             value={modelId}
             onChange={onModelChange}
-            disabled={!file}
+            disabled={!file || loading}
           />
         </div>
 
         <button
           type="button"
           onClick={onReportIssue}
-          disabled={!file}
+          disabled={!file || loading || !prediction}
           className="shrink-0 px-5 py-3 rounded-2xl bg-white/5 border border-white/15 text-white/80 text-sm hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition"
         >
           Model was wrong?
@@ -166,5 +222,4 @@ export default function DropZone({
       </div>
     </div>
   )
-
 }

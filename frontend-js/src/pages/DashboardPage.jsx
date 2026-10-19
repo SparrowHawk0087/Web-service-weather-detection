@@ -8,44 +8,48 @@ export default function DashboardPage() {
   const [file, setFile] = useState(null)
   const [modelId, setModelId] = useState('vision-v1')
   const [feedbackOpen, setFeedbackOpen] = useState(false)
-  
-  // Новые состояния для предсказаний
+
+  // Состояния для предсказаний
   const [loading, setLoading] = useState(false)
   const [prediction, setPrediction] = useState(null)
   const [error, setError] = useState(null)
   const [history, setHistory] = useState([])
 
-  // Загрузка истории предсказаний
+  // Загружаем историю при монтировании
   useEffect(() => {
     loadHistory()
   }, [])
+
+  // Отправляем файл на анализ при изменении
+  useEffect(() => {
+    if (file) {
+      analyzeFile(file)
+    } else {
+      setPrediction(null)
+      setError(null)
+    }
+  }, [file])
 
   const loadHistory = async () => {
     try {
       const response = await getPredictions()
       setHistory(response.predictions || [])
     } catch (err) {
-      console.error('Failed to load predictions history:', err)
+      console.error('Failed to load history:', err)
     }
   }
 
-  // Обработка загрузки файла и отправки на сервер
-  const handleFileSelect = async (selectedFile) => {
-    setFile(selectedFile)
+  const analyzeFile = async (selectedFile) => {
+    setLoading(true)
     setPrediction(null)
     setError(null)
-    
-    if (!selectedFile) return
 
-    setLoading(true)
-    
     try {
       const response = await createPrediction(selectedFile)
-      
+
       if (response.status === 'success') {
         setPrediction(response.prediction)
-        // Обновляем историю после успешного предсказания
-        await loadHistory()
+        await loadHistory() // обновляем историю
       } else {
         setError('Ошибка при обработке изображения')
       }
@@ -66,10 +70,9 @@ export default function DashboardPage() {
 
   return (
     <div className="h-screen flex bg-[#0a0b10] text-white overflow-hidden">
-      <Sidebar 
-        onNewAnalysis={handleNewAnalysis} 
-        history={history} 
-        loading={loading}
+      <Sidebar
+        onNewAnalysis={handleNewAnalysis}
+        history={history}
       />
 
       <main className="relative flex-1 p-6 flex flex-col items-center justify-center overflow-y-auto">
@@ -83,34 +86,15 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Отображение результата предсказания */}
-        {prediction && (
-          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-green-500/20 border border-green-400/40 rounded-lg p-4 z-10">
-            <h3 className="text-green-300 font-bold text-lg mb-2">
-              Результат: {prediction.weather_condition}
-            </h3>
-            <p className="text-green-200">
-              Уверенность: {(prediction.confidence * 100).toFixed(1)}%
-            </p>
-          </div>
-        )}
-
-        {/* Отображение ошибки */}
-        {error && (
-          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-red-500/20 border border-red-400/40 rounded-lg p-4 z-10">
-            <p className="text-red-300">{error}</p>
-          </div>
-        )}
-
-        {/* DropZone с состоянием загрузки */}
         <DropZone
           file={file}
-          onChange={handleFileSelect}
+          onChange={setFile}
           modelId={modelId}
           onModelChange={setModelId}
           onReportIssue={() => setFeedbackOpen(true)}
           loading={loading}
           prediction={prediction}
+          error={error}
         />
 
         <button
