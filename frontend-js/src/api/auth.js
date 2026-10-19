@@ -34,9 +34,10 @@ export const getProfile = async () => {
 }
 
 // Только анализ, без сохранения в историю
-export const analyzeImage = async (file) => {
+export const analyzeImage = async (file, modelId) => {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('model_id', modelId)
 
     const response = await api.post('/predictions/analyze', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

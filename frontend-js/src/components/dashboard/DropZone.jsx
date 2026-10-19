@@ -6,6 +6,7 @@ export default function DropZone({
   onChange,
   modelId,
   onModelChange,
+  onAnalyze,
   onReportIssue,
   loading = false,
   prediction = null,
@@ -99,7 +100,7 @@ export default function DropZone({
         <input
           ref={inputRef}
           type="file"
-          accept="image/png,image/jpeg,image/jpg"
+          accept="image/png,image/jpeg,image/jpg,application/zip,application/x-zip-compressed"
           onChange={handleInputChange}
           className="hidden"
         />
@@ -116,7 +117,8 @@ export default function DropZone({
 
         {file ? (
           <div className="w-full h-full p-6 flex flex-col items-center justify-center gap-4 relative">
-            {preview ? (
+            {/* Если картинка - показываем превью, если архив - иконку файла */}
+            {preview && file.type.startsWith('image/') ? (
               <img
                 src={preview}
                 alt={file.name}
@@ -138,6 +140,20 @@ export default function DropZone({
                 {(file.size / 1024 / 1024).toFixed(2)} MB
               </div>
             </div>
+
+            {/* КНОПКА ЗАПУСКА АНАЛИЗА */}
+            {!prediction && !loading && !error && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation(); // Чтобы не открывался диалог выбора файла
+                  onAnalyze();
+                }}
+                className="mt-2 px-8 py-3 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white font-medium hover:brightness-110 active:scale-[0.98] transition shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+              >
+                Start Analysis
+              </button>
+            )}
 
             {/* РЕЗУЛЬТАТ ПРЕДСКАЗАНИЯ */}
             {prediction && !loading && (
@@ -196,7 +212,7 @@ export default function DropZone({
               <p className="text-white text-sm">Drag & drop photo here</p>
               <p className="text-white/40 text-xs mt-1">or click to browse</p>
             </div>
-            <p className="text-white/30 text-xs">png, jpeg, jpg</p>
+            <p className="text-white/30 text-xs">png, jpeg, jpg, zip</p>
           </div>
         )}
       </div>
@@ -207,7 +223,7 @@ export default function DropZone({
           <ModelAccordion
             value={modelId}
             onChange={onModelChange}
-            disabled={!file || loading}
+            disabled={!file || loading || !!prediction} // Блокируем смену модели, если уже есть результат
           />
         </div>
 

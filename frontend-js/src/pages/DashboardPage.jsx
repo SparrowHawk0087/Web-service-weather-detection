@@ -27,14 +27,11 @@ export default function DashboardPage() {
     loadHistory()
   }, [])
 
+  // При смене файла просто сбрасываем старые результаты
   useEffect(() => {
-    if (file) {
-      analyzeFile(file)
-    } else {
-      setPrediction(null)
-      setError(null)
-      setSaved(false)
-    }
+    setPrediction(null)
+    setError(null)
+    setSaved(false)
   }, [file])
 
   const loadHistory = async () => {
@@ -46,15 +43,17 @@ export default function DashboardPage() {
     }
   }
 
-  // Анализ без сохранения
-  const analyzeFile = async (selectedFile) => {
+  // Запуск анализа по кнопке
+  const handleAnalyze = async () => {
+    if (!file) return
+
     setLoading(true)
     setPrediction(null)
     setError(null)
     setSaved(false)
 
     try {
-      const response = await analyzeImage(selectedFile)
+      const response = await analyzeImage(file, modelId) // Передаем modelId
       if (response.status === 'success') {
         setPrediction(response.prediction)
       } else {
@@ -127,6 +126,7 @@ export default function DashboardPage() {
           onChange={setFile}
           modelId={modelId}
           onModelChange={setModelId}
+          onAnalyze={handleAnalyze}
           onReportIssue={() => setFeedbackOpen(true)}
           loading={loading}
           prediction={prediction}
