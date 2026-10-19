@@ -2,31 +2,38 @@ import { useState, useEffect } from 'react'
 import Sidebar from '../components/dashboard/Sidebar'
 import DropZone from '../components/dashboard/DropZone'
 import FeedbackModal from '../components/dashboard/FeedbackModal'
-import { createPrediction, getPredictions } from '../api/auth'
+import SavePredictionModal from '../components/dashboard/SavePredictionModal'
+import {
+  analyzeImage,
+  savePrediction,
+  deletePrediction,
+  renamePrediction,
+  getPredictions,
+} from '../api/auth'
 
 export default function DashboardPage() {
   const [file, setFile] = useState(null)
   const [modelId, setModelId] = useState('vision-v1')
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [saveModalOpen, setSaveModalOpen] = useState(false)
+  const [saved, setSaved] = useState(false)
 
-  // Состояния для предсказаний
   const [loading, setLoading] = useState(false)
   const [prediction, setPrediction] = useState(null)
   const [error, setError] = useState(null)
   const [history, setHistory] = useState([])
 
-  // Загружаем историю при монтировании
   useEffect(() => {
     loadHistory()
   }, [])
 
-  // Отправляем файл на анализ при изменении
   useEffect(() => {
     if (file) {
       analyzeFile(file)
     } else {
       setPrediction(null)
       setError(null)
+      setSaved(false)
     }
   }, [file])
 
@@ -39,17 +46,17 @@ export default function DashboardPage() {
     }
   }
 
+  // Анализ без сохранения
   const analyzeFile = async (selectedFile) => {
     setLoading(true)
     setPrediction(null)
     setError(null)
+    setSaved(false)
 
     try {
-      const response = await createPrediction(selectedFile)
-
+      const response = await analyzeImage(selectedFile)
       if (response.status === 'success') {
         setPrediction(response.prediction)
-        await loadHistory() // обновляем историю
       } else {
         setError('Ошибка при обработке изображения')
       }
@@ -61,10 +68,36 @@ export default function DashboardPage() {
     }
   }
 
+  const handleSavePrediction = async (name) => {
+    if (!prediction) return
+    await savePrediction({ name, prediction, file })
+    setSaved(true)
+    await loadHistory()
+  }
+
+  const handleDeletePrediction = async (id) => {
+    try {
+      await deletePrediction(id)
+      setHistory((prev) => prev.filter((p) => p.id !== id))
+    } catch (err) {
+      console.error('Delete error:', err)
+    }
+  }
+
+  const handleRenamePrediction = async (id, name) => {
+    try {
+      await renamePrediction(id, name)
+      setHistory((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)))
+    } catch (err) {
+      console.error('Rename error:', err)
+    }
+  }
+
   const handleNewAnalysis = () => {
     setFile(null)
     setPrediction(null)
     setError(null)
+    setSaved(false)
     setModelId('vision-v1')
   }
 
@@ -73,16 +106,19 @@ export default function DashboardPage() {
       <Sidebar
         onNewAnalysis={handleNewAnalysis}
         history={history}
+        onDelete={handleDeletePrediction}
+        onRename={handleRenamePrediction}
       />
 
       <main className="relative flex-1 p-6 flex flex-col items-center justify-center overflow-y-auto">
         <div className="absolute top-6 right-6 z-10">
           <button
             type="button"
-            disabled={!file || !prediction}
+            onClick={() => setSaveModalOpen(true)}
+            disabled={!file || !prediction || loading || saved}
             className="px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/70 text-sm hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            Save Result
+            {saved ? 'Saved ✓' : 'Save Result'}
           </button>
         </div>
 
@@ -109,6 +145,14 @@ export default function DashboardPage() {
         isOpen={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
         file={file}
+      />
+
+      <SavePredictionModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        file={file}
+        prediction={prediction}
+        onSave={handleSavePrediction}
       />
     </div>
   )
