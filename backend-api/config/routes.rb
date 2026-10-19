@@ -14,4 +14,10 @@ Rails.application.routes.draw do
 
   # Prediction - closed endpoint - requires token
   resources :predictions, only: [:create, :index]
+
+   resources :predictions, only: [:index, :create, :destroy, :update] do
+    collection do
+      post :analyze # <-- добавляем этот роут
+    end
+  end
 end

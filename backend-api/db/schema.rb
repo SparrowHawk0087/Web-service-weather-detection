@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_18_161820) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_213836) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -116,6 +116,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_161820) do
     t.boolean "is_demo", default: false, null: false
     t.string "ml_model_version"
     t.string "ml_service_version"
+    t.string "name"
     t.string "original_filename"
     t.timestamptz "processed_at"
     t.integer "processing_duration_ms"
