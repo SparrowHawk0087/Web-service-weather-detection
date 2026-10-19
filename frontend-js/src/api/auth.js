@@ -34,4 +34,21 @@ export const getProfile = async () => {
     return response.data
 }
 
+export const createPrediction = async (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    const response = await api.post('/predictions', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    })
+    return response.data
+}
+
+export const getPredictions = async () => {
+    const response = await api.get('/predictions')
+    return response.data
+}
+
 export default api
