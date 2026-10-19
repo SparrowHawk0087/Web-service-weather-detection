@@ -1,5 +1,36 @@
 import { useRef, useState, useEffect } from 'react'
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import ModelAccordion from './ModelAccordion'
+
+// Словарь с рекомендациями для водителей
+const RECOMMENDATIONS = {
+  RAIN: [
+    'Снизьте скорость и увеличьте дистанцию',
+    'Включите ближний свет фар',
+    'Остерегайтесь аквапланирования',
+  ],
+  SNOW: [
+    'Избегайте резких торможений и поворотов',
+    'Увеличьте дистанцию в 2-3 раза',
+    'Проверьте работу стеклоочистителей',
+  ],
+  FOG: [
+    'Используйте противотуманные фары',
+    'Снизьте скорость до безопасной',
+    'Не используйте дальний свет',
+  ],
+  DEFAULT: [
+    'Соблюдайте ПДД и скоростной режим',
+    'Будьте внимательны на дороге',
+  ],
+}
+
+// Иконки для каждого типа погоды (можно заменить на SVG, если нужно)
+const WEATHER_EMOJI = {
+  RAIN: '🌧️',
+  SNOW: '❄️',
+  FOG: '🌫️',
+}
 
 export default function DropZone({
   file,
@@ -34,7 +65,7 @@ export default function DropZone({
   }, [file])
 
   const handleClick = () => {
-    if (loading) return
+    if (loading || prediction) return
     inputRef.current?.click()
   }
 
@@ -46,6 +77,7 @@ export default function DropZone({
 
   const handleDragOver = (e) => {
     e.preventDefault()
+    if (loading || prediction) return
     setIsDragging(true)
   }
 
@@ -57,6 +89,7 @@ export default function DropZone({
   const handleDrop = (e) => {
     e.preventDefault()
     setIsDragging(false)
+    if (loading || prediction) return
     const dropped = e.dataTransfer.files?.[0]
     if (dropped) onChange(dropped)
   }
@@ -66,30 +99,37 @@ export default function DropZone({
     onChange(null)
   }
 
-  // Определяем стили для бейджа погоды (фон + цвет текста для контраста)
-  const getWeatherStyle = (code) => {
-    const styles = {
-      'RAIN': 'from-blue-600 to-cyan-600 text-white',
-      'SNOW': 'from-cyan-300 to-blue-300 text-slate-900',
-      'FOG': 'from-gray-300 to-slate-400 text-slate-900',
-    }
-    return styles[code] || 'from-purple-500 to-fuchsia-500 text-white'
+  const CHART_COLORS = {
+    'RAIN': '#3b82f6', // blue-500
+    'SNOW': '#22d3ee', // cyan-400
+    'FOG': '#9ca3af',  // gray-400
   }
 
+  const chartData = prediction?.probabilities
+    ? Object.entries(prediction.probabilities).map(([key, value]) => ({
+        name: key.toUpperCase(),
+        value: value,
+      })).sort((a, b) => b.value - a.value)
+    : []
+
+  // Получаем рекомендации для текущей погоды
+  const currentTips = prediction 
+    ? (RECOMMENDATIONS[prediction.weather_code] || RECOMMENDATIONS.DEFAULT)
+    : []
+
   return (
-    <div className="w-full max-w-2xl flex flex-col gap-3">
-      {/* main drop zone */}
+    <div className="w-full max-w-4xl flex flex-col gap-3">
       <div
         onClick={handleClick}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          relative w-full h-[420px] rounded-3xl
+          relative w-full min-h-[420px] rounded-3xl
           border-2 border-dashed
           flex flex-col items-center justify-center
           transition-all overflow-hidden
-          ${loading ? 'cursor-wait' : 'cursor-pointer'}
+          ${loading ? 'cursor-wait' : prediction ? 'cursor-default' : 'cursor-pointer'}
           ${
             isDragging
               ? 'border-purple-400 bg-purple-500/10 scale-[1.01]'
@@ -105,7 +145,6 @@ export default function DropZone({
           className="hidden"
         />
 
-        {/* СОСТОЯНИЕ ЗАГРУЗКИ */}
         {loading && (
           <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
             <div className="w-16 h-16 rounded-full border-4 border-purple-400/30 border-t-purple-400 animate-spin" />
@@ -116,83 +155,12 @@ export default function DropZone({
         )}
 
         {file ? (
-          <div className="w-full h-full p-6 flex flex-col items-center justify-center gap-4 relative">
-            {/* Если картинка - показываем превью, если архив - иконку файла */}
-            {preview && file.type.startsWith('image/') ? (
-              <img
-                src={preview}
-                alt={file.name}
-                className="max-h-[260px] max-w-full rounded-2xl object-contain"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center">
-                <svg className="w-10 h-10 text-white/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
-                </svg>
-              </div>
-            )}
-
-            <div className="text-center">
-              <div className="text-white text-sm font-medium truncate max-w-xs">
-                {file.name}
-              </div>
-              <div className="text-white/40 text-xs mt-1">
-                {(file.size / 1024 / 1024).toFixed(2)} MB
-              </div>
-            </div>
-
-            {/* КНОПКА ЗАПУСКА АНАЛИЗА */}
-            {!prediction && !loading && !error && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAnalyze();
-                }}
-                className="mt-2 px-8 py-3 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white font-medium hover:brightness-110 active:scale-[0.98] transition shadow-[0_0_20px_rgba(168,85,247,0.4)]"
-              >
-                Start Analysis
-              </button>
-            )}
-
-            {/* РЕЗУЛЬТАТ ПРЕДСКАЗАНИЯ */}
-            {prediction && !loading && (
-              <div className={`absolute bottom-6 left-6 right-6 rounded-2xl bg-gradient-to-r ${getWeatherStyle(prediction.weather_code)} p-4 shadow-lg`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    {/* Нейтральная подпись с наследованием цвета через opacity */}
-                    <p className="opacity-70 text-sm font-medium mb-0.5">
-                      Результат
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {prediction.weather_condition}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="opacity-70 text-sm font-medium mb-0.5">
-                      Уверенность
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {(prediction.confidence * 100).toFixed(1)}%
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ОШИБКА */}
-            {error && !loading && (
-              <div className="absolute bottom-6 left-6 right-6 rounded-2xl bg-red-500/20 border border-red-400/40 p-4">
-                <p className="text-red-300 text-sm text-center">{error}</p>
-              </div>
-            )}
-
-            {/* Кнопка удаления */}
+          <div className="w-full h-full p-6 flex flex-col items-center justify-center relative">
             {!loading && (
               <button
                 type="button"
                 onClick={clearFile}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition"
+                className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition"
                 aria-label="Remove"
               >
                 <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -200,6 +168,167 @@ export default function DropZone({
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
+            )}
+
+            {prediction ? (
+              <div className="w-full h-full flex flex-col md:flex-row items-center justify-between gap-8 pt-4">
+                
+                {/* Левая колонка: Фото */}
+                <div className="flex-1 w-full flex flex-col items-center justify-center min-w-0">
+                  {preview && file.type.startsWith('image/') ? (
+                    <img
+                      src={preview}
+                      alt={file.name}
+                      className="max-h-[320px] max-w-full rounded-2xl object-contain shadow-2xl"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center">
+                      <svg className="w-12 h-12 text-white/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="text-center mt-4">
+                    <div className="text-white text-sm font-medium truncate max-w-[250px]">
+                      {file.name}
+                    </div>
+                    <div className="text-white/40 text-xs mt-1">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </div>
+                  </div>
+                </div>
+
+                {/* Правая колонка: Результат, Диаграмма и Рекомендации */}
+                <div 
+                  className="w-full md:w-[340px] shrink-0 bg-[#12131b] border border-white/10 rounded-3xl p-6 shadow-xl flex flex-col items-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-center w-full">
+                    <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1">
+                      Вердикт модели
+                    </p>
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <span className="text-3xl">{WEATHER_EMOJI[prediction.weather_code] || '🌤️'}</span>
+                      <p className="text-3xl font-bold text-white">
+                        {prediction.weather_condition}
+                      </p>
+                    </div>
+                    <p className="text-lg font-bold text-purple-400 mb-6">
+                      Уверенность: {(prediction.confidence * 100).toFixed(1)}%
+                    </p>
+                  </div>
+
+                  {/* Кольцевая диаграмма */}
+                  <div className="w-32 h-32 relative mb-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={chartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={60}
+                          paddingAngle={3}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {chartData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={CHART_COLORS[entry.name] || '#8884d8'} 
+                            />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Легенда */}
+                  <div className="w-full space-y-2 mb-6">
+                    {chartData.map((item) => (
+                      <div key={item.name} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span 
+                            className="w-2.5 h-2.5 rounded-full shrink-0" 
+                            style={{ backgroundColor: CHART_COLORS[item.name] || '#8884d8' }} 
+                          />
+                          <span className="text-white/80 text-sm font-medium">
+                            {item.name}
+                          </span>
+                        </div>
+                        <span className="text-white/60 text-sm font-mono">
+                          {(item.value * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Блок с рекомендациями */}
+                  <div className="w-full border-t border-white/10 pt-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                      </svg>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-purple-300">
+                        Рекомендации
+                      </span>
+                    </div>
+                    <ul className="space-y-2">
+                      {currentTips.map((tip, idx) => (
+                        <li key={idx} className="text-sm text-white/70 flex items-start gap-2 leading-tight">
+                          <span className="text-purple-400 mt-0.5 font-bold">•</span>
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-4">
+                {preview && file.type.startsWith('image/') ? (
+                  <img
+                    src={preview}
+                    alt={file.name}
+                    className="max-h-[260px] max-w-full rounded-2xl object-contain"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-white/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4" />
+                    </svg>
+                  </div>
+                )}
+
+                <div className="text-center">
+                  <div className="text-white text-sm font-medium truncate max-w-xs">
+                    {file.name}
+                  </div>
+                  <div className="text-white/40 text-xs mt-1">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </div>
+                </div>
+
+                {!loading && !error && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAnalyze();
+                    }}
+                    className="mt-4 px-8 py-3 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white font-medium hover:brightness-110 active:scale-[0.98] transition shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+                  >
+                    Start Analysis
+                  </button>
+                )}
+
+                {error && !loading && (
+                  <div className="mt-4 rounded-2xl bg-red-500/20 border border-red-400/40 p-4 w-full max-w-md">
+                    <p className="text-red-300 text-sm text-center">{error}</p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         ) : (
@@ -218,7 +347,6 @@ export default function DropZone({
         )}
       </div>
 
-      {/* bottom block: accordion + Model was wrong */}
       <div className="flex items-center gap-3">
         <div className="flex-1">
           <ModelAccordion
