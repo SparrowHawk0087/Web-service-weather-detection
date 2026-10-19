@@ -66,14 +66,14 @@ export default function DropZone({
     onChange(null)
   }
 
-  // Определяем цвет для бейджа погоды
-  const getWeatherColor = (code) => {
-    const colors = {
-      'RAIN': 'from-blue-500 to-cyan-500',
-      'SNOW': 'from-cyan-400 to-blue-300',
-      'FOG': 'from-gray-400 to-slate-500',
+  // Определяем стили для бейджа погоды (фон + цвет текста для контраста)
+  const getWeatherStyle = (code) => {
+    const styles = {
+      'RAIN': 'from-blue-600 to-cyan-600 text-white',
+      'SNOW': 'from-cyan-300 to-blue-300 text-slate-900',
+      'FOG': 'from-gray-300 to-slate-400 text-slate-900',
     }
-    return colors[code] || 'from-purple-500 to-fuchsia-500'
+    return styles[code] || 'from-purple-500 to-fuchsia-500 text-white'
   }
 
   return (
@@ -146,7 +146,7 @@ export default function DropZone({
               <button
                 type="button"
                 onClick={(e) => {
-                  e.stopPropagation(); // Чтобы не открывался диалог выбора файла
+                  e.stopPropagation();
                   onAnalyze();
                 }}
                 className="mt-2 px-8 py-3 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white font-medium hover:brightness-110 active:scale-[0.98] transition shadow-[0_0_20px_rgba(168,85,247,0.4)]"
@@ -157,21 +157,22 @@ export default function DropZone({
 
             {/* РЕЗУЛЬТАТ ПРЕДСКАЗАНИЯ */}
             {prediction && !loading && (
-              <div className={`absolute bottom-6 left-6 right-6 rounded-2xl bg-gradient-to-r ${getWeatherColor(prediction.weather_code)} p-4 shadow-lg`}>
+              <div className={`absolute bottom-6 left-6 right-6 rounded-2xl bg-gradient-to-r ${getWeatherStyle(prediction.weather_code)} p-4 shadow-lg`}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white/80 text-xs uppercase tracking-wider mb-1">
+                    {/* Нейтральная подпись с наследованием цвета через opacity */}
+                    <p className="opacity-70 text-sm font-medium mb-0.5">
                       Результат
                     </p>
-                    <p className="text-white text-2xl font-bold">
+                    <p className="text-2xl font-bold">
                       {prediction.weather_condition}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-white/80 text-xs uppercase tracking-wider mb-1">
+                    <p className="opacity-70 text-sm font-medium mb-0.5">
                       Уверенность
                     </p>
-                    <p className="text-white text-2xl font-bold">
+                    <p className="text-2xl font-bold">
                       {(prediction.confidence * 100).toFixed(1)}%
                     </p>
                   </div>
@@ -223,7 +224,7 @@ export default function DropZone({
           <ModelAccordion
             value={modelId}
             onChange={onModelChange}
-            disabled={!file || loading || !!prediction} // Блокируем смену модели, если уже есть результат
+            disabled={!file || loading || !!prediction}
           />
         </div>
 
