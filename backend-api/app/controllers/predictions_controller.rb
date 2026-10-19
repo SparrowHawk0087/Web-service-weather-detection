@@ -3,13 +3,17 @@ class PredictionsController < ApplicationController
   before_action :authenticate_request, only: [:create, :index, :analyze, :update, :destroy]
 
   # POST /predictions/analyze
-  # Только анализируем картинку, НЕ сохраняем в БД
+  # Только анализируем картинку (или архив), НЕ сохраняем в БД
   def analyze
     unless params[:file].present?
       return render json: { error: "Файл не передан" }, status: :bad_request
     end
 
-    ml_response = call_ml_service(params[:file])
+    # Получаем ID модели (по умолчанию vision-v1, если не передан)
+    model_id = params[:model_id] || "vision-v1"
+    
+    # Передаем файл и ID модели в ML-сервис
+    ml_response = call_ml_service(params[:file], model_id)
 
     if ml_response[:status] == "success"
       weather_code = ml_response[:prediction][:class].upcase
@@ -88,7 +92,7 @@ class PredictionsController < ApplicationController
         {
           id: p.id,
           public_id: p.public_id,
-          name: p.name, # <-- Добавили name
+          name: p.name,
           status: p.status,
           weather_condition: condition_name,
           weather_code: p.weather_condition&.code,
@@ -121,7 +125,8 @@ class PredictionsController < ApplicationController
 
   private
 
-  def call_ml_service(file)
+  # Обновленный метод для отправки в FastAPI
+  def call_ml_service(file, model_id)
     require 'net/http'
     require 'uri'
 
@@ -130,10 +135,18 @@ class PredictionsController < ApplicationController
     boundary = "----RubyFormBoundary#{SecureRandom.hex(10)}"
     
     body = []
+    
+    # 1. Отправляем сам файл
     body << "--#{boundary}\r\n"
     body << "Content-Disposition: form-data; name=\"file\"; filename=\"#{file.original_filename}\"\r\n"
     body << "Content-Type: #{file.content_type}\r\n\r\n"
     body << file.read
+    body << "\r\n"
+    
+    # 2. Отправляем ID модели
+    body << "--#{boundary}\r\n"
+    body << "Content-Disposition: form-data; name=\"model_id\"\r\n\r\n"
+    body << model_id.to_s
     body << "\r\n--#{boundary}--\r\n"
     
     body = body.join
