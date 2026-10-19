@@ -26,7 +26,8 @@ class PredictionsController < ApplicationController
         prediction: {
           weather_condition: condition_name,
           weather_code: weather_code,
-          confidence: ml_response[:prediction][:confidence]
+          confidence: ml_response[:prediction][:confidence],
+          probabilities: ml_response[:prediction][:probabilities]
         }
       }
     else
