@@ -1,14 +1,15 @@
 import asyncio
 import random
-from fastapi import FastAPI, UploadFile, File, HTTPException
+import zipfile
+import io
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Mock ML Weather Detection Service")
 
-# Разрешаем запросы с фронтенда и бэкенда (настраиваем CORS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # В продакшене заменить на конкретные домены
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -21,15 +22,35 @@ WEATHER_CLASSES = [
 ]
 
 @app.post("/predict")
-async def predict_weather(file: UploadFile = File(...)):
-    # 1. Простая валидация типа файла
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Файл должен быть изображением")
+async def predict_weather(
+    file: UploadFile = File(...), 
+    model_id: str = Form("vision-v1") # <-- Принимаем ID модели
+):
+    content = await file.read()
     
-    # 2. Имитация времени инференса модели (1 секунда)
+    # 1. Обработка архива (ZIP)
+    if file.content_type in ["application/zip", "application/x-zip-compressed"] or file.filename.endswith('.zip'):
+        try:
+            with zipfile.ZipFile(io.BytesIO(content)) as z:
+                # Ищем первый попавшийся файл изображения в архиве
+                image_files = [f for f in z.namelist() if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+                if not image_files:
+                    raise HTTPException(status_code=400, detail="В архиве нет изображений")
+                # В реальном приложении тут был бы цикл по всем фото, 
+                # но для мока просто имитируем, что нашли фото
+                filename_to_process = image_files[0]
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="Некорректный ZIP архив")
+    else:
+        # 2. Обработка одиночного фото
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Файл должен быть изображением или ZIP-архивом")
+        filename_to_process = file.filename
+
+    # 3. Имитация времени инференса (1 секунда)
     await asyncio.sleep(1.0)
     
-    # 3. Генерация случайного, но реалистичного ответа
+    # 4. Генерация ответа
     result = random.choice(WEATHER_CLASSES)
     confidence = round(random.uniform(result["confidence_range"][0], result["confidence_range"][1]), 2)
     
@@ -40,7 +61,8 @@ async def predict_weather(file: UploadFile = File(...)):
             "label": result["label"],
             "confidence": confidence
         },
-        "filename": file.filename,
+        "filename": filename_to_process,
+        "model_used": model_id,
         "message": "Mock prediction completed successfully"
     }
 
