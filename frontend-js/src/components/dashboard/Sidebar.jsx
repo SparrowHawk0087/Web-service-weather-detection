@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
-export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRename }) {
+export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRename, onSelect }) {
   const { user } = useAuth()
   const [tab, setTab] = useState('recent')
   const [openMenuId, setOpenMenuId] = useState(null)
@@ -30,10 +30,13 @@ export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRenam
 
   const initial = user?.name?.charAt(0).toUpperCase() || '?'
 
-  const handleItemClick = (id) => {
+  // Открывает выпадающее меню (Pin, Rename, Delete)
+  const toggleMenu = (e, id) => {
+    e.stopPropagation()
     setOpenMenuId(openMenuId === id ? null : id)
   }
 
+  // Обработка действий из меню
   const handleAction = (action, item) => {
     if (action === 'pin' || action === 'unpin') {
       setPinnedIds((prev) => {
@@ -143,10 +146,11 @@ export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRenam
         ) : (
           filtered.map((item) => (
             <div key={item.id} className="relative">
+              {/* Кнопка карточки истории (открывает модалку) */}
               <button
                 type="button"
-                onClick={() => handleItemClick(item.id)}
-                className="w-full text-left p-3 rounded-xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] transition"
+                onClick={() => onSelect && onSelect(item)}
+                className="w-full text-left p-3 rounded-xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] transition group"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -160,21 +164,34 @@ export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRenam
                             : 'bg-gray-400'
                         }`}
                       />
-                      {item.name || item.weather_condition}
+                      <span className="truncate">{item.name || item.weather_condition}</span>
                     </div>
-                    <div className="text-white/40 text-xs mt-0.5">
-                      {formatDate(item.created_at)} · {(item.confidence * 100).toFixed(0)}%
-                      {item.name ? ` · ${item.weather_condition}` : ''}
+                    <div className="text-white/40 text-xs mt-1 flex items-center justify-between">
+                      <span>{formatDate(item.created_at)} · {(item.confidence * 100).toFixed(0)}%</span>
                     </div>
                   </div>
-                  <svg className="w-4 h-4 shrink-0 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                  
+                  {/* Кнопка меню (три точки) */}
+                  <div
+                    onClick={(e) => toggleMenu(e, item.id)}
+                    className="p-1.5 -mr-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="1" />
+                      <circle cx="12" cy="5" r="1" />
+                      <circle cx="12" cy="19" r="1" />
+                    </svg>
+                  </div>
+                </div>
+                {/* Подпись с названием модели */}
+                <div className="text-white/30 text-[10px] mt-1.5 truncate">
+                  Model: {item.ml_model_version || 'Unknown'}
                 </div>
               </button>
 
+              {/* Выпадающее меню */}
               {openMenuId === item.id && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-20 bg-[#1a1a25] border border-white/15 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden">
+                <div className="absolute top-full right-0 mt-1 w-40 z-20 bg-[#1a1a25] border border-white/15 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden">
                   <button
                     type="button"
                     onClick={() => handleAction(item.pinned ? 'unpin' : 'pin', item)}

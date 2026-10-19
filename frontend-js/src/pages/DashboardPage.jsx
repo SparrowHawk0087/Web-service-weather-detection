@@ -3,6 +3,7 @@ import Sidebar from '../components/dashboard/Sidebar'
 import DropZone from '../components/dashboard/DropZone'
 import FeedbackModal from '../components/dashboard/FeedbackModal'
 import SavePredictionModal from '../components/dashboard/SavePredictionModal'
+import HistoryDetailsModal from '../components/dashboard/HistoryDetailsModal' // <-- Импортируем
 import {
   analyzeImage,
   savePrediction,
@@ -18,6 +19,9 @@ export default function DashboardPage() {
   const [saveModalOpen, setSaveModalOpen] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  // Стейт для выбранной записи из истории
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState(null)
+
   const [loading, setLoading] = useState(false)
   const [prediction, setPrediction] = useState(null)
   const [error, setError] = useState(null)
@@ -27,7 +31,6 @@ export default function DashboardPage() {
     loadHistory()
   }, [])
 
-  // При смене файла просто сбрасываем старые результаты
   useEffect(() => {
     setPrediction(null)
     setError(null)
@@ -43,7 +46,6 @@ export default function DashboardPage() {
     }
   }
 
-  // Запуск анализа по кнопке
   const handleAnalyze = async () => {
     if (!file) return
 
@@ -53,7 +55,7 @@ export default function DashboardPage() {
     setSaved(false)
 
     try {
-      const response = await analyzeImage(file, modelId) // Передаем modelId
+      const response = await analyzeImage(file, modelId)
       if (response.status === 'success') {
         setPrediction(response.prediction)
       } else {
@@ -69,7 +71,7 @@ export default function DashboardPage() {
 
   const handleSavePrediction = async (name) => {
     if (!prediction) return
-    await savePrediction({ name, prediction, file })
+    await savePrediction({ name, prediction, file, modelId }) // <-- Передаем modelId
     setSaved(true)
     await loadHistory()
   }
@@ -78,6 +80,7 @@ export default function DashboardPage() {
     try {
       await deletePrediction(id)
       setHistory((prev) => prev.filter((p) => p.id !== id))
+      if (selectedHistoryItem?.id === id) setSelectedHistoryItem(null) // Закрываем модалку, если удалили выбранную
     } catch (err) {
       console.error('Delete error:', err)
     }
@@ -87,6 +90,9 @@ export default function DashboardPage() {
     try {
       await renamePrediction(id, name)
       setHistory((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)))
+      if (selectedHistoryItem?.id === id) {
+        setSelectedHistoryItem((prev) => ({ ...prev, name }))
+      }
     } catch (err) {
       console.error('Rename error:', err)
     }
@@ -107,6 +113,7 @@ export default function DashboardPage() {
         history={history}
         onDelete={handleDeletePrediction}
         onRename={handleRenamePrediction}
+        onSelect={setSelectedHistoryItem} // <-- Передаем функцию для открытия модалки
       />
 
       <main className="relative flex-1 p-6 flex flex-col items-center justify-center overflow-y-auto">
@@ -153,6 +160,13 @@ export default function DashboardPage() {
         file={file}
         prediction={prediction}
         onSave={handleSavePrediction}
+      />
+
+      {/* Модалка истории */}
+      <HistoryDetailsModal
+        isOpen={!!selectedHistoryItem}
+        onClose={() => setSelectedHistoryItem(null)}
+        item={selectedHistoryItem}
       />
     </div>
   )

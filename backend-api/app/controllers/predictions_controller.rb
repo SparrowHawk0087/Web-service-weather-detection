@@ -37,21 +37,27 @@ class PredictionsController < ApplicationController
 
   # POST /predictions
   # Сохраняем результат, который пришел с фронтенда
-  def create
-    weather_code = params[:weather_code]
+   def create
+    weather_code = params[:weather_code] || "UNKNOWN"
     weather_condition = WeatherCondition.active.find_by(code: weather_code)
 
+    # Парсим вероятности, если они пришли
+    parsed_probs = if params[:probabilities].present?
+      JSON.parse(params[:probabilities])
+    else
+      { weather_code => params[:confidence] }
+    end
+
     prediction = current_user.predictions.new(
-      name: params[:name], # Название, введенное пользователем в модалке
-      status: "completed", # Сразу ставим completed, так как анализ уже прошел
+      name: params[:name].presence || "Без названия",
+      status: "completed",
       weather_condition: weather_condition,
       confidence: params[:confidence],
-      class_probabilities: { weather_code => params[:confidence] },
-      ml_model_version: "mock-v1",
+      class_probabilities: parsed_probs, # <-- Сохраняем все вероятности
+      ml_model_version: params[:model_version] || "mock-v1",
       ml_service_version: "mock-v1"
     )
 
-    # Заглушка для файла, так как Active Storage пока не настроен
     if params[:image].present?
       file = params[:image]
       prediction.storage_key = "temp_#{SecureRandom.hex(8)}"
@@ -60,35 +66,27 @@ class PredictionsController < ApplicationController
     end
 
     if prediction.save
-      locale = current_user.locale || "ru"
-      condition_name = weather_condition&.translated(locale)&.name || weather_code
-
-      render json: {
-        status: "success",
-        prediction: {
-          id: prediction.id,
-          public_id: prediction.public_id,
-          name: prediction.name,
-          status: prediction.status,
-          weather_condition: condition_name,
-          weather_code: weather_code,
-          confidence: prediction.confidence,
-          created_at: prediction.created_at
-        }
-      }, status: :created
+      render json: { status: "success", prediction: { id: prediction.id } }, status: :created
     else
       render json: { error: prediction.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
   # GET /predictions
+   # GET /predictions
   def index
     predictions = current_user.predictions.completed.recent.limit(10).includes(:weather_condition)
     locale = current_user.locale || "ru"
     
     render json: {
       predictions: predictions.map do |p|
-        condition_name = p.weather_condition&.translated(locale)&.name || p.weather_condition&.code || "UNKNOWN"
+        # Умный фолбэк: переводим имя -> берем код -> берем топ из вероятностей -> UNKNOWN
+        top_prob_class = p.class_probabilities&.max_by { |_k, v| v }&.first
+        
+        condition_name = p.weather_condition&.translated(locale)&.name || 
+                         p.weather_condition&.code || 
+                         top_prob_class || 
+                         "UNKNOWN"
         
         {
           id: p.id,
@@ -96,8 +94,11 @@ class PredictionsController < ApplicationController
           name: p.name,
           status: p.status,
           weather_condition: condition_name,
-          weather_code: p.weather_condition&.code,
+          weather_code: p.weather_condition&.code || top_prob_class,
           confidence: p.confidence,
+          probabilities: p.class_probabilities, # <-- Теперь тут будут все 3 класса
+          ml_model_version: p.ml_model_version,
+          original_filename: p.original_filename,
           created_at: p.created_at
         }
       end
