@@ -12,4 +12,6 @@ Rails.application.routes.draw do
   # Saved resourse: all closed
   get    "/profile", to: "profile#show"
 
+  # Prediction - closed endpoint - requires token
+  resources :predictions, only: [:create, :index]
 end
