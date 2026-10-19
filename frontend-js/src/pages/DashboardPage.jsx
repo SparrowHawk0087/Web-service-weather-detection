@@ -1,30 +1,130 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Sidebar from '../components/dashboard/Sidebar'
 import DropZone from '../components/dashboard/DropZone'
 import FeedbackModal from '../components/dashboard/FeedbackModal'
+import SavePredictionModal from '../components/dashboard/SavePredictionModal'
+import HistoryDetailsModal from '../components/dashboard/HistoryDetailsModal' // <-- Импортируем
+import {
+  analyzeImage,
+  savePrediction,
+  deletePrediction,
+  renamePrediction,
+  getPredictions,
+} from '../api/auth'
 
 export default function DashboardPage() {
   const [file, setFile] = useState(null)
   const [modelId, setModelId] = useState('vision-v1')
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [saveModalOpen, setSaveModalOpen] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  // Стейт для выбранной записи из истории
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState(null)
+
+  const [loading, setLoading] = useState(false)
+  const [prediction, setPrediction] = useState(null)
+  const [error, setError] = useState(null)
+  const [history, setHistory] = useState([])
+
+  useEffect(() => {
+    loadHistory()
+  }, [])
+
+  useEffect(() => {
+    setPrediction(null)
+    setError(null)
+    setSaved(false)
+  }, [file])
+
+  const loadHistory = async () => {
+    try {
+      const response = await getPredictions()
+      setHistory(response.predictions || [])
+    } catch (err) {
+      console.error('Failed to load history:', err)
+    }
+  }
+
+  const handleAnalyze = async () => {
+    if (!file) return
+
+    setLoading(true)
+    setPrediction(null)
+    setError(null)
+    setSaved(false)
+
+    try {
+      const response = await analyzeImage(file, modelId)
+      if (response.status === 'success') {
+        setPrediction(response.prediction)
+      } else {
+        setError('Ошибка при обработке изображения')
+      }
+    } catch (err) {
+      console.error('Prediction error:', err)
+      setError(err.response?.data?.error || 'Ошибка анализа изображения')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSavePrediction = async (name) => {
+    if (!prediction) return
+    await savePrediction({ name, prediction, file, modelId }) // <-- Передаем modelId
+    setSaved(true)
+    await loadHistory()
+  }
+
+  const handleDeletePrediction = async (id) => {
+    try {
+      await deletePrediction(id)
+      setHistory((prev) => prev.filter((p) => p.id !== id))
+      if (selectedHistoryItem?.id === id) setSelectedHistoryItem(null) // Закрываем модалку, если удалили выбранную
+    } catch (err) {
+      console.error('Delete error:', err)
+    }
+  }
+
+  const handleRenamePrediction = async (id, name) => {
+    try {
+      await renamePrediction(id, name)
+      setHistory((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)))
+      if (selectedHistoryItem?.id === id) {
+        setSelectedHistoryItem((prev) => ({ ...prev, name }))
+      }
+    } catch (err) {
+      console.error('Rename error:', err)
+    }
+  }
 
   const handleNewAnalysis = () => {
     setFile(null)
+    setPrediction(null)
+    setError(null)
+    setSaved(false)
     setModelId('vision-v1')
   }
 
   return (
     <div className="h-screen flex bg-[#0a0b10] text-white overflow-hidden">
-      <Sidebar onNewAnalysis={handleNewAnalysis} />
+      <Sidebar
+        onNewAnalysis={handleNewAnalysis}
+        history={history}
+        onDelete={handleDeletePrediction}
+        onRename={handleRenamePrediction}
+        onSelect={setSelectedHistoryItem} // <-- Передаем функцию для открытия модалки
+      />
 
       <main className="relative flex-1 p-6 flex flex-col items-center justify-center overflow-y-auto">
         <div className="absolute top-6 right-6 z-10">
           <button
             type="button"
-            disabled={!file}
+            onClick={() => setSaveModalOpen(true)}
+            disabled={!file || !prediction || loading || saved}
             className="px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/70 text-sm hover:bg-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            Save Result
+            {saved ? 'Saved ✓' : 'Save Result'}
           </button>
         </div>
 
@@ -33,7 +133,11 @@ export default function DashboardPage() {
           onChange={setFile}
           modelId={modelId}
           onModelChange={setModelId}
+          onAnalyze={handleAnalyze}
           onReportIssue={() => setFeedbackOpen(true)}
+          loading={loading}
+          prediction={prediction}
+          error={error}
         />
 
         <button
@@ -48,6 +152,21 @@ export default function DashboardPage() {
         isOpen={feedbackOpen}
         onClose={() => setFeedbackOpen(false)}
         file={file}
+      />
+
+      <SavePredictionModal
+        isOpen={saveModalOpen}
+        onClose={() => setSaveModalOpen(false)}
+        file={file}
+        prediction={prediction}
+        onSave={handleSavePrediction}
+      />
+
+      {/* Модалка истории */}
+      <HistoryDetailsModal
+        isOpen={!!selectedHistoryItem}
+        onClose={() => setSelectedHistoryItem(null)}
+        item={selectedHistoryItem}
       />
     </div>
   )

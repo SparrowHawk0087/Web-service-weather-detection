@@ -8,7 +8,6 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token')
-
     if (token) {
         config.headers.Authorization = `Token token=${token}`
     }
@@ -31,6 +30,55 @@ export const logout = async () => {
 
 export const getProfile = async () => {
     const response = await api.get('/profile')
+    return response.data
+}
+
+// Только анализ, без сохранения в историю
+export const analyzeImage = async (file, modelId) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('model_id', modelId)
+
+    const response = await api.post('/predictions/analyze', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+}
+
+// Сохранение результата в историю (с названием)
+export const savePrediction = async ({ name, prediction, file, modelId }) => {
+    const formData = new FormData()
+    formData.append('name', name)
+    formData.append('weather_code', prediction.weather_code ?? prediction.class ?? '')
+    formData.append('weather_condition', prediction.weather_condition ?? prediction.label ?? '')
+    formData.append('confidence', String(prediction.confidence ?? ''))
+    formData.append('model_version', modelId)
+    
+    if (prediction.probabilities) {
+        formData.append('probabilities', JSON.stringify(prediction.probabilities))
+    }
+    
+    if (file) formData.append('image', file)
+
+    const response = await api.post('/predictions', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    
+    return response.data
+}
+
+export const getPredictions = async () => {
+    const response = await api.get('/predictions')
+    return response.data
+}
+
+export const deletePrediction = async (id) => {
+    const response = await api.delete(`/predictions/${id}`)
+    return response.data
+}
+
+export const renamePrediction = async (id, name) => {
+    const response = await api.patch(`/predictions/${id}`, { name })
     return response.data
 }
 
