@@ -51,21 +51,21 @@ export function AuthProvider({ children }) {
 
     const login = async (email, password) => {
         const data = await authApi.login(email, password)
-        localStorage.setItem('token', data.token)
+        localStorage.setItem('token', data.api_token)
         localStorage.setItem('user', JSON.stringify(data.user))
-        setToken(data.token)
+        setToken(data.api_token)
         setUser(data.user)
         return data
     }
 
     const register = async (userData) => {
         const data = await authApi.register(userData)
-        localStorage.setItem('token', data.token)
+        localStorage.setItem('token', data.api_token)
 
         const userObj = data.user
 
         localStorage.setItem('user', JSON.stringify(userObj))
-        setToken(data.token)
+        setToken(data.api_token)
         setUser(userObj)
         return data
     }
