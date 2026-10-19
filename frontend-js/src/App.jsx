@@ -9,49 +9,44 @@ import DashboardPage from './pages/DashboardPage.jsx'
 import AboutPage from './pages/AboutPage'
 
 function App() {
-  return (
-    <Routes>
-        <Route 
-            path="/login"
-            element={
-            <PublicRoute>
-                <LoginPage />
-            </PublicRoute>
-            } 
-        />
-        <Route 
-            path="/register"
-            element={
-                <PublicRoute>
-                    <RegisterPage />
-                </PublicRoute>
-            } 
-        />
-
-        <Route 
-            path="/dashboard"
-            element={
-                <PrivateRoute>
-                    <DashboardPage />
-                </PrivateRoute>
-            }
-        />
-
-        <Route
-            path="/profile"
-            element={
-                <PrivateRoute>
-                    <ProfilePage />
-                </PrivateRoute>
-                
-            }
-        />
-        
-        <Route path="/about" element={<AboutPage />} />
-
-        <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
-  )
+    return (
+        <Routes>
+            <Route
+                path="/login"
+                element={
+                    <PublicRoute>
+                        <LoginPage />
+                    </PublicRoute>
+                }
+            />
+            <Route
+                path="/register"
+                element={
+                    <PublicRoute>
+                        <RegisterPage />
+                    </PublicRoute>
+                }
+            />
+            <Route
+                path="/dashboard"
+                element={
+                    <PrivateRoute>
+                        <DashboardPage />
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/profile"
+                element={
+                    <PrivateRoute>
+                        <ProfilePage />
+                    </PrivateRoute>
+                }
+            />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+    )
 }
 
 export default App
