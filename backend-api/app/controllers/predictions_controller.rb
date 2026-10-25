@@ -132,7 +132,7 @@ class PredictionsController < ApplicationController
     require 'net/http'
     require 'uri'
 
-    uri = URI('http://localhost:8000/predict')
+    uri = URI(ENV.fetch('ML_SERVICE_URL', 'http://localhost:8000/predict'))
     
     boundary = "----RubyFormBoundary#{SecureRandom.hex(10)}"
     

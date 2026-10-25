@@ -20,3 +20,38 @@
 bin/rails server        # запуск backend API
 npm run dev             # запуск frontend сервера
 ```
+
+### Запуск через Docker Compose
+
+Поднимает frontend, backend, ML-сервис и PostgreSQL одной командой:
+
+```bash
+docker compose up --build
+```
+
+После запуска:
+
+| Сервис | Адрес |
+| :--- | :--- |
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:3000 |
+| ML-сервис (Swagger) | http://localhost:8000/docs |
+| PostgreSQL | только внутри Docker-сети |
+
+Остановка:
+
+```bash
+docker compose down
+```
+
+Остановка с удалением базы данных:
+
+```bash
+docker compose down -v
+```
+
+При первом запуске backend автоматически применяет миграции и загружает сиды. Для доступа к консоли Rails:
+
+```bash
+docker compose exec backend-api bin/rails console
+```

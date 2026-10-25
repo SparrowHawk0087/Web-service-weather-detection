@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: weather
+      POSTGRES_PASSWORD: weather
+      POSTGRES_DB: web_service_weather_detection_development
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weather -d web_service_weather_detection_development"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ml-service:
+    build:
+      context: ./ml-service
+    ports:
+      - "8000:8000"
+
+  backend-api:
+    build:
+      context: ./backend-api
+      dockerfile: Dockerfile.dev
+    environment:
+      RAILS_ENV: development
+      DB_HOST: db
+      DB_USER: weather
+      DB_PASSWORD: weather
+      DB_NAME: web_service_weather_detection_development
+      ML_SERVICE_URL: http://ml-service:8000/predict
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-dev-only-secret-key-base-change-me}
+    command: >
+      bash -lc "rm -f tmp/pids/server.pid &&
+      bin/rails db:prepare &&
+      bin/rails db:seed &&
+      bin/rails server -b 0.0.0.0 -p 3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      ml-service:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend-js
+    environment:
+      VITE_API_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend-api
+
+volumes:
+  pgdata:
