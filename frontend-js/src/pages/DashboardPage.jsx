@@ -3,7 +3,7 @@ import Sidebar from '../components/dashboard/Sidebar'
 import DropZone from '../components/dashboard/DropZone'
 import FeedbackModal from '../components/dashboard/FeedbackModal'
 import SavePredictionModal from '../components/dashboard/SavePredictionModal'
-import HistoryDetailsModal from '../components/dashboard/HistoryDetailsModal' // <-- Импортируем
+import HistoryDetailsModal from '../components/dashboard/HistoryDetailsModal'
 import {
   analyzeImage,
   savePrediction,
@@ -19,7 +19,6 @@ export default function DashboardPage() {
   const [saveModalOpen, setSaveModalOpen] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  // Стейт для выбранной записи из истории
   const [selectedHistoryItem, setSelectedHistoryItem] = useState(null)
 
   const [loading, setLoading] = useState(false)
@@ -71,7 +70,7 @@ export default function DashboardPage() {
 
   const handleSavePrediction = async (name) => {
     if (!prediction) return
-    await savePrediction({ name, prediction, file, modelId }) // <-- Передаем modelId
+    await savePrediction({ name, prediction, file, modelId })
     setSaved(true)
     await loadHistory()
   }
@@ -80,7 +79,7 @@ export default function DashboardPage() {
     try {
       await deletePrediction(id)
       setHistory((prev) => prev.filter((p) => p.id !== id))
-      if (selectedHistoryItem?.id === id) setSelectedHistoryItem(null) // Закрываем модалку, если удалили выбранную
+      if (selectedHistoryItem?.id === id) setSelectedHistoryItem(null)
     } catch (err) {
       console.error('Delete error:', err)
     }
@@ -107,13 +106,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-screen flex bg-[#0a0b10] text-white overflow-hidden">
+    <div className="h-screen flex text-white overflow-hidden">
       <Sidebar
         onNewAnalysis={handleNewAnalysis}
         history={history}
         onDelete={handleDeletePrediction}
         onRename={handleRenamePrediction}
-        onSelect={setSelectedHistoryItem} // <-- Передаем функцию для открытия модалки
+        onSelect={setSelectedHistoryItem}
       />
 
       <main className="relative flex-1 p-6 flex flex-col items-center justify-center overflow-y-auto">
@@ -162,7 +161,6 @@ export default function DashboardPage() {
         onSave={handleSavePrediction}
       />
 
-      {/* Модалка истории */}
       <HistoryDetailsModal
         isOpen={!!selectedHistoryItem}
         onClose={() => setSelectedHistoryItem(null)}
