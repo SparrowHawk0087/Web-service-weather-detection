@@ -35,6 +35,13 @@
 backend-api/vendor/bundle/
 **/vendor/bundle/
 
+# Python artifacts
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+
 # Rails credentials
 /config/credentials/*.key
 /config/master.key

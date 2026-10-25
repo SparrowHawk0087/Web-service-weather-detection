@@ -30,37 +30,7 @@ const TECH_STACK = [
 export default function AboutPage() {
   return (
     <div className="relative min-h-screen overflow-hidden">
-
-      {/* Layer 1: gradients — replace background from Figma */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `
-            linear-gradient(
-              135deg,
-              #1e3a5f 0%,
-              #16273f 25%,
-              #0f1828 55%,
-              #0a0d18 80%,
-              #06080f 100%
-            )
-          `,
-        }}
-      />
-
-      {/* Layer 2: grain */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35] mix-blend-overlay"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'repeat',
-          backgroundSize: '180px 180px',
-        }}
-      />
-
-      {/* content */}
       <div className="relative z-10 max-w-3xl mx-auto px-4 py-16 text-white">
-
         {/* logo */}
         <div className="flex items-center justify-center gap-3 mb-12">
           <span className="text-3xl font-bold tracking-wider">FSR-WEATHER</span>
