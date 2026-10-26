@@ -1,6 +1,10 @@
 class ApplicationController < ActionController::API
   include ActionController::HttpAuthentication::Token::ControllerMethods
 
+  rescue_from ActiveRecord::RecordNotFound do
+    render json: { error: "Запись не найдена" }, status: :not_found
+  end
+
   private
 
   def authenticate_request
