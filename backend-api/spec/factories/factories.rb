@@ -17,6 +17,12 @@ FactoryBot.define do
     display_order  { 1 }
   end
 
+  factory :weather_condition_translation do
+    weather_condition
+    locale { "ru" }
+    name   { "Дождь" }
+  end
+
   factory :prediction do
     user
     status { "pending" }

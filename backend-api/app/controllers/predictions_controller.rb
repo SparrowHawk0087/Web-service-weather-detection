@@ -30,6 +30,8 @@ class PredictionsController < ApplicationController
           probabilities: ml_response[:prediction][:probabilities]
         }
       }
+    elsif [ 400, 422 ].include?(ml_response[:http_status])
+      render json: { error: "Некорректный файл", details: ml_response[:details] }, status: :unprocessable_content
     else
       render json: { error: "Ошибка ML-сервиса", details: ml_response }, status: :internal_server_error
     end
@@ -159,8 +161,22 @@ class PredictionsController < ApplicationController
     request.body = body
 
     response = http.request(request)
-    
-    JSON.parse(response.body, symbolize_names: true)
+
+    if response.is_a?(Net::HTTPSuccess)
+      JSON.parse(response.body, symbolize_names: true)
+    else
+      details = begin
+        JSON.parse(response.body.to_s, symbolize_names: true)
+      rescue JSON::ParserError
+        { body: response.body.to_s }
+      end
+
+      {
+        status: "error",
+        http_status: response.code.to_i,
+        details: details
+      }
+    end
   rescue => e
     { status: "error", message: e.message }
   end
