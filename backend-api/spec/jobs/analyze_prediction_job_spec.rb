@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe AnalyzePredictionJob, type: :job do
   let(:user) { create(:user) }
-  let(:condition) { create(:weather_condition, code: "RAIN") }
+  let(:condition) { WeatherCondition.find_or_create_by!(code: "RAIN") }
   let(:storage_key) { "#{SecureRandom.uuid}.png" }
   let(:prediction) do
     create(
