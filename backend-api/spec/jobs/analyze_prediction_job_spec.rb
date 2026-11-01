@@ -26,7 +26,7 @@ RSpec.describe AnalyzePredictionJob, type: :job do
 
   it "classifies an image and marks the prediction as completed" do
     allow(WeatherCondition).to receive(:active).and_return(WeatherCondition.where(id: condition.id))
-    stub_request(:post, %r{/predict/?\\z}).to_return(
+    stub_request(:post, %r{/predict/?\z}).to_return(
       status: 200,
       headers: { "Content-Type" => "application/json" },
       body: {
