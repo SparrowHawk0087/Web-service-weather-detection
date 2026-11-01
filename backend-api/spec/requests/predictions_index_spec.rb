@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe "Predictions index", type: :request do
   let(:user) { create(:user) }
   let(:headers) { auth_headers(token_for(user)) }
-  let!(:condition) { create(:weather_condition, code: "RAIN") }
+  let!(:condition) { WeatherCondition.find_or_create_by!(code: "RAIN") }
 
   before do
     create(:weather_condition_translation, weather_condition: condition, locale: "ru", name: "Дождь")
