@@ -63,15 +63,17 @@ module MlService
 
     def multipart_body(boundary:, filename:, content_type:, file_content:, model_id:)
       safe_filename = filename.gsub(/["\r\n]/, "_")
-      body = +""
-      body << "--#{boundary}\r\n"
-      body << "Content-Disposition: form-data; name=\"file\"; filename=\"#{safe_filename}\"\r\n"
-      body << "Content-Type: #{content_type}\r\n\r\n"
-      body << file_content
-      body << "\r\n--#{boundary}\r\n"
-      body << "Content-Disposition: form-data; name=\"model_id\"\r\n\r\n"
-      body << model_id.to_s
-      body << "\r\n--#{boundary}--\r\n"
+      # Multipart payload contains arbitrary image bytes, so keep the whole
+      # request body binary. Text headers retain their UTF-8 bytes via #b.
+      body = String.new(encoding: Encoding::BINARY)
+      body << "--#{boundary}\r\n".b
+      body << "Content-Disposition: form-data; name=\"file\"; filename=\"#{safe_filename}\"\r\n".b
+      body << "Content-Type: #{content_type}\r\n\r\n".b
+      body << file_content.b
+      body << "\r\n--#{boundary}\r\n".b
+      body << "Content-Disposition: form-data; name=\"model_id\"\r\n\r\n".b
+      body << model_id.to_s.b
+      body << "\r\n--#{boundary}--\r\n".b
       body
     end
 
