@@ -37,6 +37,18 @@ RSpec.describe "Predictions async", type: :request do
     expect(response).to have_http_status(:bad_request)
   end
 
+  it "возвращает 503, если очередь не приняла задачу" do
+    allow(AnalyzePredictionJob).to receive(:perform_later).and_return(false)
+
+    post "/predictions/async",
+         params: { file: upload_fixture("sample.png", "image/png") },
+         headers: headers
+
+    expect(response).to have_http_status(:service_unavailable)
+    expect(Prediction.last.status).to eq("failed")
+    expect(Prediction.last.error_code).to eq("QUEUE_UNAVAILABLE")
+  end
+
   it "отклоняет неподдерживаемый тип файла" do
     post "/predictions/async",
          params: { file: upload_fixture("sample.png", "text/plain") },
