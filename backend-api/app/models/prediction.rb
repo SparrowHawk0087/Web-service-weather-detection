@@ -14,8 +14,15 @@ class Prediction < ApplicationRecord
   scope :undefined, -> { where(status: "completed", weather_condition_id: nil) }
 
   def claim!
-    self.class.where(id: id, status: "pending")
-        .update_all(status: "processing", started_at: Time.current, updated_at: Time.current) == 1
+    claimed = self.class.where(id: id, status: "pending")
+                       .update_all(status: "processing", started_at: Time.current, updated_at: Time.current) == 1
+
+    if claimed
+      reload
+      PredictionStatusBroadcaster.broadcast(self)
+    end
+
+    claimed
   end
 
   def complete!(weather_condition:, confidence:, class_probabilities:, **extra)
@@ -31,6 +38,7 @@ class Prediction < ApplicationRecord
       }.merge(extra)
     )
     reload
+    PredictionStatusBroadcaster.broadcast(self) if updated == 1
     updated == 1
   end
 
@@ -43,6 +51,7 @@ class Prediction < ApplicationRecord
       updated_at:    Time.current
     )
     reload
+    PredictionStatusBroadcaster.broadcast(self) if updated == 1
     updated == 1
   end
 
