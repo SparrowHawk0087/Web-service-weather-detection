@@ -6,7 +6,8 @@ RSpec.describe "Predictions index", type: :request do
   let!(:condition) { WeatherCondition.find_or_create_by!(code: "RAIN") }
 
   before do
-    create(:weather_condition_translation, weather_condition: condition, locale: "ru", name: "Дождь")
+    translation = condition.translations.find_or_initialize_by(locale: "ru")
+    translation.update!(name: "Дождь")
   end
 
   it "возвращает последние 10 записей всех статусов в порядке от новых к старым" do
