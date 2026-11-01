@@ -7,7 +7,8 @@ Rails.application.routes.draw do
   resources :predictions, only: [:index, :show, :create, :update, :destroy] do
     collection do
       post :analyze
-      post :async, action: :enqueue
     end
   end
+
+  post "/predictions/async", to: "predictions#enqueue"
 end
