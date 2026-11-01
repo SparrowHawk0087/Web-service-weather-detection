@@ -1,5 +1,7 @@
 require "net/http"
 require "uri"
+require "timeout"
+require "socket"
 
 module MlService
   class WeatherPredictionClient
@@ -17,7 +19,9 @@ module MlService
 
     def call(storage_key:, original_filename:, model_id:)
       file_path = PredictionImageStorage.path_for(storage_key)
-      raise RejectedFileError.new("Файл изображения не найден", error_code: "IMAGE_NOT_FOUND") unless File.file?(file_path)
+      unless File.file?(file_path)
+        raise RejectedFileError.new("Файл изображения не найден", error_code: "IMAGE_NOT_FOUND")
+      end
 
       uri = URI(ENV.fetch("ML_SERVICE_URL", "http://localhost:8000/predict"))
       boundary = "----RubyFormBoundary#{SecureRandom.hex(12)}"
@@ -41,21 +45,27 @@ module MlService
       request["Content-Type"] = "multipart/form-data; boundary=#{boundary}"
       request.body = body
 
-      response = http.request(request)
-      parse_response(response)
+      parse_response(http.request(request))
     rescue Net::OpenTimeout, Net::ReadTimeout, Timeout::Error,
            SocketError, Errno::ECONNREFUSED, Errno::ECONNRESET, EOFError => error
-      raise TransientError.new("ML-сервис временно недоступен: #{error.message}", error_code: "ML_SERVICE_UNAVAILABLE")
+      raise TransientError.new(
+        "ML-сервис временно недоступен: #{error.message}",
+        error_code: "ML_SERVICE_UNAVAILABLE"
+      )
     rescue JSON::ParserError => error
-      raise TransientError.new("ML-сервис вернул некорректный JSON: #{error.message}", error_code: "INVALID_ML_RESPONSE")
+      raise TransientError.new(
+        "ML-сервис вернул некорректный JSON: #{error.message}",
+        error_code: "INVALID_ML_RESPONSE"
+      )
     end
 
     private
 
     def multipart_body(boundary:, filename:, content_type:, file_content:, model_id:)
+      safe_filename = filename.gsub(/["\r\n]/, "_")
       body = +""
       body << "--#{boundary}\r\n"
-      body << "Content-Disposition: form-data; name=\"file\"; filename=\"#{filename.gsub(/[\"\r\n]/, '_')}\"\r\n"
+      body << "Content-Disposition: form-data; name=\"file\"; filename=\"#{safe_filename}\"\r\n"
       body << "Content-Type: #{content_type}\r\n\r\n"
       body << file_content
       body << "\r\n--#{boundary}\r\n"
@@ -77,7 +87,6 @@ module MlService
 
     def parse_response(response)
       parsed = JSON.parse(response.body, symbolize_names: true)
-
       return parsed if response.is_a?(Net::HTTPSuccess)
 
       details = parsed[:detail] || parsed[:error] || "Неизвестная ошибка ML-сервиса"
