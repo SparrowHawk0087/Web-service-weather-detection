@@ -13,6 +13,17 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7.4-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   ml-service:
     build:
       context: ./ml-service
@@ -29,6 +40,7 @@ services:
       DB_USER: weather
       DB_PASSWORD: weather
       DB_NAME: web_service_weather_detection_development
+      REDIS_URL: redis://redis:6379/0
       ML_SERVICE_URL: http://ml-service:8000/predict
       SECRET_KEY_BASE: ${SECRET_KEY_BASE:-dev-only-secret-key-base-change-me}
     command: >
@@ -40,6 +52,30 @@ services:
       - "3000:3000"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ml-service:
+        condition: service_started
+
+  sidekiq:
+    build:
+      context: ./backend-api
+      dockerfile: Dockerfile.dev
+    environment:
+      RAILS_ENV: development
+      DB_HOST: db
+      DB_USER: weather
+      DB_PASSWORD: weather
+      DB_NAME: web_service_weather_detection_development
+      REDIS_URL: redis://redis:6379/0
+      ML_SERVICE_URL: http://ml-service:8000/predict
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-dev-only-secret-key-base-change-me}
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       ml-service:
         condition: service_started
@@ -56,3 +92,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:
