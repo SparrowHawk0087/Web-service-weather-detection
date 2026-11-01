@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe AnalyzePredictionJob, type: :job do
+  include ActiveJob::TestHelper
+
   let(:user) { create(:user) }
   let(:condition) { WeatherCondition.find_or_create_by!(code: "RAIN") }
   let(:storage_key) { "#{SecureRandom.uuid}.png" }
@@ -67,6 +69,10 @@ RSpec.describe AnalyzePredictionJob, type: :job do
   end
 
   it "marks the prediction as failed after exhausting transient retries" do
+    queue_adapter = described_class.queue_adapter
+    queue_adapter.enqueued_jobs.clear
+    queue_adapter.performed_jobs.clear
+
     client = instance_double(MlService::WeatherPredictionClient)
     allow(MlService::WeatherPredictionClient).to receive(:new).and_return(client)
     allow(client).to receive(:call).and_raise(
