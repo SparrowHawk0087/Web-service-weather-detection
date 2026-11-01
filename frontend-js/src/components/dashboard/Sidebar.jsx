@@ -29,6 +29,12 @@ export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRenam
   )
 
   const initial = user?.name?.charAt(0).toUpperCase() || '?'
+  const statusLabels = {
+    pending: 'В очереди',
+    processing: 'Обработка',
+    failed: 'Ошибка',
+    cancelled: 'Отменён',
+  }
 
   // Открывает выпадающее меню (Pin, Rename, Delete)
   const toggleMenu = (e, id) => {
@@ -167,7 +173,13 @@ export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRenam
                       <span className="truncate">{item.name || item.weather_condition}</span>
                     </div>
                     <div className="text-white/40 text-xs mt-1 flex items-center justify-between">
-                      <span>{formatDate(item.created_at)} · {(item.confidence * 100).toFixed(0)}%</span>
+                      <span>
+                        {formatDate(item.created_at)} · {
+                          item.status === 'completed'
+                            ? `${(item.confidence * 100).toFixed(0)}%`
+                            : (statusLabels[item.status] || 'Неизвестный статус')
+                        }
+                      </span>
                     </div>
                   </div>
                   
