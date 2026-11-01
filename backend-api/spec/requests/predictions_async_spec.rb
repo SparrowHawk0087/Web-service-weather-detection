@@ -11,7 +11,8 @@ RSpec.describe "Predictions async", type: :request do
   end
 
   it "сохраняет изображение и ставит анализ в очередь" do
-    allow(AnalyzePredictionJob).to receive(:perform_later).and_return(true)
+    enqueued_job = double(successfully_enqueued?: true)
+    allow(AnalyzePredictionJob).to receive(:perform_later).and_return(enqueued_job)
 
     expect do
       post "/predictions/async",
