@@ -75,7 +75,7 @@ export default function DashboardPage() {
   const handlePredictionUpdate = useCallback((updatedPrediction) => {
     setHistory((current) => mergePrediction(current, updatedPrediction))
     setSelectedHistoryItem((current) => (
-      current?.id === updatedPrediction.id
+      current?.id === updatedPrediction.id && isIncomingNewer(current, updatedPrediction)
         ? { ...current, ...updatedPrediction }
         : current
     ))
