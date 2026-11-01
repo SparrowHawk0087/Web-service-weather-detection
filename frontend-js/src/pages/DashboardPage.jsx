@@ -102,7 +102,7 @@ export default function DashboardPage() {
       setLoading(false)
       setError(
         activePrediction.error_code
-          ? \`Не удалось выполнить анализ (\${activePrediction.error_code}).\`
+          ? 'Не удалось выполнить анализ (' + activePrediction.error_code + ').'
           : 'Не удалось выполнить анализ изображения.',
       )
     } else {
