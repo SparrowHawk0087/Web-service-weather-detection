@@ -9,7 +9,7 @@ RSpec.describe "Prediction pipeline integration", type: :request do
 
   after do
     Prediction.where(user: user).find_each do |prediction|
-      PredictionImageStorage.delete!(prediction.storage_key) if prediction.storage_key&.match?(/\\A[0-9a-f-]{36}\\./i)
+      PredictionImageStorage.delete!(prediction.storage_key) if prediction.storage_key&.match?(/\A[0-9a-f-]{36}\./i)
     end
   end
 
@@ -19,7 +19,7 @@ RSpec.describe "Prediction pipeline integration", type: :request do
       WeatherCondition.where(id: weather_condition.id)
     )
 
-    stub_request(:post, %r{/predict/?\\z}).to_return(
+    stub_request(:post, %r{/predict/?\z}).to_return(
       status: 200,
       headers: { "Content-Type" => "application/json" },
       body: {
