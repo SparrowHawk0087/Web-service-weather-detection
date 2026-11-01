@@ -47,6 +47,25 @@ RSpec.describe AnalyzePredictionJob, type: :job do
     expect(prediction.weather_condition).to eq(condition)
   end
 
+  it "returns the prediction to pending and enqueues a retry after a transient error" do
+    client = instance_double(MlService::WeatherPredictionClient)
+    allow(MlService::WeatherPredictionClient).to receive(:new).and_return(client)
+    allow(client).to receive(:call).and_raise(
+      MlService::WeatherPredictionClient::TransientError.new(
+        "ML service is temporarily unavailable",
+        error_code: "ML_SERVICE_UNAVAILABLE"
+      )
+    )
+
+    expect do
+      described_class.perform_now(prediction.id)
+    end.to have_enqueued_job(described_class).with(prediction.id)
+
+    expect(prediction.reload.status).to eq("pending")
+    expect(prediction.retry_count).to eq(1)
+    expect(prediction.started_at).to be_nil
+  end
+
   it "marks a rejected image as failed without retrying it" do
     client = instance_double(MlService::WeatherPredictionClient)
     allow(MlService::WeatherPredictionClient).to receive(:new).and_return(client)
