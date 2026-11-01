@@ -40,33 +40,38 @@ function mergePrediction(history, incoming) {
   return history.map((item) => item.id === incoming.id ? updated : item)
 }
 
+function mergeHistory(current, incomingItems) {
+  const merged = incomingItems.map((incoming) => {
+    const existing = current.find((item) => item.id === incoming.id)
+    if (!existing) return incoming
+
+    return isIncomingNewer(existing, incoming)
+      ? { ...existing, ...incoming }
+      : existing
+  })
+
+  const missing = current.filter(
+    (item) => !incomingItems.some((incoming) => incoming.id === item.id),
+  )
+
+  return [...merged, ...missing].slice(0, 10)
+}
+
 export default function DashboardPage() {
   const [file, setFile] = useState(null)
   const [modelId, setModelId] = useState('vision-v1')
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [selectedHistoryItem, setSelectedHistoryItem] = useState(null)
 
-  const [loading, setLoading] = useState(false)
-  const [prediction, setPrediction] = useState(null)
-  const [error, setError] = useState(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [requestError, setRequestError] = useState(null)
   const [history, setHistory] = useState([])
   const [activePredictionId, setActivePredictionId] = useState(null)
 
   const loadHistory = useCallback(async () => {
     try {
       const response = await getPredictions()
-      setHistory((current) => {
-        const fetched = response.predictions || []
-        const merged = fetched.map((item) => {
-          const existing = current.find((entry) => entry.id === item.id)
-          if (!existing) return item
-          return isIncomingNewer(existing, item) ? { ...existing, ...item } : existing
-        })
-        const missing = current.filter(
-          (item) => !fetched.some((entry) => entry.id === item.id),
-        )
-        return [...merged, ...missing].slice(0, 10)
-      })
+      setHistory((current) => mergeHistory(current, response.predictions || []))
     } catch (err) {
       console.error('Failed to load history:', err)
     }
@@ -83,46 +88,57 @@ export default function DashboardPage() {
 
   usePredictionStream(handlePredictionUpdate, loadHistory)
 
+  // Fetch the initial snapshot after the Dashboard mounts. Merging rather than
+  // replacing keeps any newer WebSocket event received while the request ran.
   useEffect(() => {
-    loadHistory()
-  }, [loadHistory])
+    let active = true
 
-  useEffect(() => {
-    if (activePredictionId === null) return
+    getPredictions()
+      .then((response) => {
+        if (active) {
+          setHistory((current) => mergeHistory(current, response.predictions || []))
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load history:', err)
+      })
 
-    const activePrediction = history.find((item) => item.id === activePredictionId)
-    if (!activePrediction) return
-
-    if (activePrediction.status === 'completed') {
-      setPrediction(activePrediction)
-      setLoading(false)
-      setError(null)
-    } else if (activePrediction.status === 'failed') {
-      setPrediction(null)
-      setLoading(false)
-      setError(
-        activePrediction.error_code
-          ? 'Не удалось выполнить анализ (' + activePrediction.error_code + ').'
-          : 'Не удалось выполнить анализ изображения.',
-      )
-    } else {
-      setLoading(true)
+    return () => {
+      active = false
     }
-  }, [history, activePredictionId])
+  }, [])
 
-  useEffect(() => {
-    setPrediction(null)
-    setError(null)
+  const activePrediction = activePredictionId === null
+    ? null
+    : history.find((item) => item.id === activePredictionId) || null
+
+  const prediction = activePrediction?.status === 'completed'
+    ? activePrediction
+    : null
+
+  const isProcessing = ['pending', 'processing'].includes(activePrediction?.status)
+  const loading = isSubmitting || isProcessing
+
+  const processingError = activePrediction?.status === 'failed'
+    ? activePrediction.error_code
+      ? 'Не удалось выполнить анализ (' + activePrediction.error_code + ').'
+      : 'Не удалось выполнить анализ изображения.'
+    : null
+
+  const error = requestError || processingError
+
+  const handleFileChange = (selectedFile) => {
+    setFile(selectedFile)
+    setRequestError(null)
     setActivePredictionId(null)
-    setLoading(false)
-  }, [file])
+    setIsSubmitting(false)
+  }
 
   const handleAnalyze = async () => {
-    if (!file) return
+    if (!file || isSubmitting) return
 
-    setLoading(true)
-    setPrediction(null)
-    setError(null)
+    setIsSubmitting(true)
+    setRequestError(null)
     setActivePredictionId(null)
 
     try {
@@ -131,8 +147,10 @@ export default function DashboardPage() {
 
       setActivePredictionId(queuedPrediction.id)
       setHistory((current) => mergePrediction(current, queuedPrediction))
+      setIsSubmitting(false)
 
       // A final event can arrive before the browser receives the HTTP 202.
+      // Refreshing the record closes that small delivery race.
       try {
         const latest = await getPrediction(queuedPrediction.id)
         setHistory((current) => mergePrediction(current, latest.prediction))
@@ -141,8 +159,10 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error('Prediction enqueue error:', err)
-      setError(err.response?.data?.error || 'Не удалось отправить изображение на анализ')
-      setLoading(false)
+      setRequestError(
+        err.response?.data?.error || 'Не удалось отправить изображение на анализ',
+      )
+      setIsSubmitting(false)
     }
   }
 
@@ -170,11 +190,7 @@ export default function DashboardPage() {
   }
 
   const handleNewAnalysis = () => {
-    setFile(null)
-    setPrediction(null)
-    setError(null)
-    setLoading(false)
-    setActivePredictionId(null)
+    handleFileChange(null)
     setModelId('vision-v1')
   }
 
@@ -195,7 +211,7 @@ export default function DashboardPage() {
 
         <DropZone
           file={file}
-          onChange={setFile}
+          onChange={handleFileChange}
           modelId={modelId}
           onModelChange={setModelId}
           onAnalyze={handleAnalyze}
