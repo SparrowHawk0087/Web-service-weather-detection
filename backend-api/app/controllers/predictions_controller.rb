@@ -48,8 +48,8 @@ class PredictionsController < ApplicationController
       return render json: { error: "Файл не передан" }, status: :bad_request
     end
 
-    storage_key = PredictionImageStorage.store!(uploaded_file)
     prediction = nil
+    storage_key = PredictionImageStorage.store!(uploaded_file)
     image_path = PredictionImageStorage.path_for(storage_key)
     model_id = params[:model_id].presence || "vision-v1"
 
@@ -64,7 +64,8 @@ class PredictionsController < ApplicationController
     )
 
     begin
-      AnalyzePredictionJob.perform_later(prediction.id)
+      enqueued_job = AnalyzePredictionJob.perform_later(prediction.id)
+      raise "Active Job did not enqueue the prediction" unless enqueued_job&.successfully_enqueued?
     rescue StandardError => error
       Rails.logger.error(
         "[PredictionsController#enqueue] Failed to enqueue prediction_id=#{prediction.id}: " \
@@ -91,6 +92,9 @@ class PredictionsController < ApplicationController
   rescue ActiveRecord::RecordInvalid => error
     PredictionImageStorage.delete!(storage_key) if storage_key.present? && prediction.nil?
     render json: { error: error.record.errors.full_messages }, status: :unprocessable_entity
+  rescue ActiveRecord::RecordNotUnique
+    PredictionImageStorage.delete!(storage_key) if storage_key.present? && prediction.nil?
+    render json: { error: "Это изображение уже было отправлено на анализ" }, status: :conflict
   end
 
   # POST /predictions
