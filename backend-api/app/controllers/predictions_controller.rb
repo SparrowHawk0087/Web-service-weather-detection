@@ -65,7 +65,9 @@ class PredictionsController < ApplicationController
 
     begin
       enqueued_job = AnalyzePredictionJob.perform_later(prediction.id)
-      raise "Active Job did not enqueue the prediction" unless enqueued_job&.successfully_enqueued?
+      unless enqueued_job && enqueued_job.respond_to?(:successfully_enqueued?) && enqueued_job.successfully_enqueued?
+        raise "Active Job did not enqueue the prediction"
+      end
     rescue StandardError => error
       Rails.logger.error(
         "[PredictionsController#enqueue] Failed to enqueue prediction_id=#{prediction.id}: " \
