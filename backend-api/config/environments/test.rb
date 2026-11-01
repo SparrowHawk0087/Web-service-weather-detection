@@ -7,4 +7,7 @@ Rails.application.configure do
 
   # Keep request/job specs isolated from the development Redis instance.
   config.active_job.queue_adapter = :test
+
+  # RSpec request specs use www.example.com as their default host.
+  config.hosts << "www.example.com"
 end
