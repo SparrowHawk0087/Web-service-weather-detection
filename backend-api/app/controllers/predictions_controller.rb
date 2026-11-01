@@ -49,6 +49,7 @@ class PredictionsController < ApplicationController
     end
 
     storage_key = PredictionImageStorage.store!(uploaded_file)
+    prediction = nil
     image_path = PredictionImageStorage.path_for(storage_key)
     model_id = params[:model_id].presence || "vision-v1"
 
@@ -85,9 +86,10 @@ class PredictionsController < ApplicationController
       prediction: prediction_summary(prediction)
     }, status: :accepted
   rescue PredictionImageStorage::InvalidUpload => error
+    PredictionImageStorage.delete!(storage_key) if storage_key.present? && prediction.nil?
     render json: { error: error.message }, status: :unprocessable_content
   rescue ActiveRecord::RecordInvalid => error
-    PredictionImageStorage.delete!(storage_key) if storage_key.present? && !defined?(prediction)
+    PredictionImageStorage.delete!(storage_key) if storage_key.present? && prediction.nil?
     render json: { error: error.record.errors.full_messages }, status: :unprocessable_entity
   end
 
