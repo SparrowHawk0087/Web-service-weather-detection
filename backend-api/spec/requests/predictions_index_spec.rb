@@ -3,13 +3,14 @@ require "rails_helper"
 RSpec.describe "Predictions index", type: :request do
   let(:user) { create(:user) }
   let(:headers) { auth_headers(token_for(user)) }
-  let!(:condition) { create(:weather_condition, code: "RAIN") }
+  let!(:condition) { WeatherCondition.find_or_create_by!(code: "RAIN") }
 
   before do
-    create(:weather_condition_translation, weather_condition: condition, locale: "ru", name: "Дождь")
+    translation = condition.translations.find_or_initialize_by(locale: "ru")
+    translation.update!(name: "Дождь")
   end
 
-  it "возвращает только completed, не больше 10 и в порядке от новых к старым" do
+  it "возвращает последние 10 записей всех статусов в порядке от новых к старым" do
     11.times do |index|
       create(
         :prediction,
@@ -17,22 +18,23 @@ RSpec.describe "Predictions index", type: :request do
         user: user,
         weather_condition: condition,
         name: "Запись #{index}",
-        created_at: (index + 1).hours.ago
+        created_at: (index + 2).hours.ago
       )
     end
 
-    create(:prediction, user: user, status: "pending", name: "В процессе")
-    create(:prediction, user: user, status: "failed", name: "Ошибка")
+    create(:prediction, user: user, status: "pending", name: "В процессе", created_at: 1.minute.ago)
+    create(:prediction, user: user, status: "failed", name: "Ошибка", created_at: 30.seconds.ago)
 
     get "/predictions", headers: headers
 
     expect(response).to have_http_status(:ok)
     list = response.parsed_body["predictions"]
     names = list.map { |prediction| prediction["name"] }
+
     expect(list.size).to eq(10)
-    expect(names).to eq((0..9).map { |index| "Запись #{index}" })
-    expect(names).not_to include("В процессе")
-    expect(names).not_to include("Ошибка")
+    expect(names.first(2)).to eq(["Ошибка", "В процессе"])
+    expect(list.first["status"]).to eq("failed")
+    expect(list.second["status"]).to eq("pending")
   end
 
   it "возвращает top probability, если weather_condition не найден" do

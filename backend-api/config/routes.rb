@@ -1,23 +1,14 @@
 Rails.application.routes.draw do
-  # Registry: opened POST-endpoint - Resourceful Routing
-  # actions to session, not CRUD to resourse.
-  post   "/signup",  to: "users#create"
-
-  # Login: opened — client doesn't have token yet
-  post   "/login",   to: "sessions#create"
-
-  # Logout: closed — before_action :authenticate_request, only: :destroy
-  delete "/logout",  to: "sessions#destroy"
-
-  # Saved resourse: all closed
+  post   "/signup", to: "users#create"
+  post   "/login",  to: "sessions#create"
+  delete "/logout", to: "sessions#destroy"
   get    "/profile", to: "profile#show"
 
-  # Prediction - closed endpoint - requires token
-  resources :predictions, only: [:create, :index]
-
-   resources :predictions, only: [:index, :create, :destroy, :update] do
+  resources :predictions, only: [:index, :show, :create, :update, :destroy] do
     collection do
-      post :analyze # <-- добавляем этот роут
+      post :analyze
     end
   end
+
+  post "/predictions/async", to: "predictions#enqueue"
 end

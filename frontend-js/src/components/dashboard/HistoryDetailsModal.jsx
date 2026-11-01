@@ -34,21 +34,32 @@ export default function HistoryDetailsModal({ isOpen, onClose, item }) {
 
   if (!isOpen || !item) return null
 
-  // Подготавливаем данные графика (безопасно)
-  const chartData = item.probabilities
+  const isCompleted = item.status === 'completed'
+  const statusLabels = {
+    pending: 'В очереди',
+    processing: 'Обработка изображения',
+    failed: 'Не удалось выполнить анализ',
+    cancelled: 'Анализ отменён',
+  }
+  const statusText = statusLabels[item.status] || 'Неизвестный статус'
+
+  // Подготавливаем данные графика только для завершённого анализа.
+  const chartData = isCompleted && item.probabilities
     ? Object.entries(item.probabilities).map(([key, value]) => ({
         name: key.toUpperCase(),
         value: value,
       })).sort((a, b) => b.value - a.value)
     : []
 
-  // Если название пришло битым (UNKNOWN), берем первый класс из графика
+  // Если название пришло битым (UNKNOWN), берем первый класс из графика.
   const topClass = chartData.length > 0 ? chartData[0].name : 'UNKNOWN'
-  const displayCondition = (item.weather_condition && item.weather_condition !== 'UNKNOWN') 
-    ? item.weather_condition 
+  const displayCondition = (item.weather_condition && item.weather_condition !== 'UNKNOWN')
+    ? item.weather_condition
     : topClass
 
-  const currentTips = RECOMMENDATIONS[topClass] || RECOMMENDATIONS.DEFAULT
+  const currentTips = isCompleted
+    ? (RECOMMENDATIONS[topClass] || RECOMMENDATIONS.DEFAULT)
+    : []
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) onClose()
@@ -96,17 +107,25 @@ export default function HistoryDetailsModal({ isOpen, onClose, item }) {
           {/* Правая часть: Результат и диаграмма */}
           <div className="w-full md:w-1/2 flex flex-col items-center bg-white/[0.02] border border-white/5 rounded-2xl p-4">
             <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1">
-              Вердикт модели
+              {isCompleted ? 'Вердикт модели' : 'Статус анализа'}
             </p>
             <div className="flex items-center justify-center gap-2 mb-1">
-              <span className="text-3xl">{WEATHER_EMOJI[topClass] || '🌤️'}</span>
+              <span className="text-3xl">{isCompleted ? (WEATHER_EMOJI[topClass] || '🌤️') : '⏳'}</span>
               <p className="text-2xl font-bold text-white">
-                {displayCondition}
+                {isCompleted ? displayCondition : statusText}
               </p>
             </div>
-            <p className="text-lg font-bold text-purple-400 mb-4">
-              {(item.confidence * 100).toFixed(1)}%
-            </p>
+            {isCompleted ? (
+              <p className="text-lg font-bold text-purple-400 mb-4">
+                {(Number(item.confidence || 0) * 100).toFixed(1)}%
+              </p>
+            ) : (
+              <p className="text-sm text-white/50 text-center mb-4">
+                {item.status === 'failed'
+                  ? 'Попробуйте загрузить изображение ещё раз.'
+                  : 'Результат классификации появится после завершения обработки.'}
+              </p>
+            )}
 
             {/* Диаграмма (фикс размеров для модалки) */}
             {chartData.length > 0 && (
@@ -153,7 +172,7 @@ export default function HistoryDetailsModal({ isOpen, onClose, item }) {
         </div>
         
         {/* Рекомендации */}
-        <div className="mt-6 border-t border-white/10 pt-4">
+        {isCompleted && <div className="mt-6 border-t border-white/10 pt-4">
           <div className="flex items-center gap-2 mb-3">
             <svg className="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
@@ -170,7 +189,7 @@ export default function HistoryDetailsModal({ isOpen, onClose, item }) {
               </li>
             ))}
           </ul>
-        </div>
+        </div>}
       </div>
     </div>
   )

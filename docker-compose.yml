@@ -43,6 +43,8 @@ services:
       REDIS_URL: redis://redis:6379/0
       ML_SERVICE_URL: http://ml-service:8000/predict
       SECRET_KEY_BASE: ${SECRET_KEY_BASE:-dev-only-secret-key-base-change-me}
+    volumes:
+      - prediction_uploads:/app/storage/prediction_uploads
     command: >
       bash -lc "rm -f tmp/pids/server.pid &&
       bin/rails db:prepare &&
@@ -71,6 +73,8 @@ services:
       REDIS_URL: redis://redis:6379/0
       ML_SERVICE_URL: http://ml-service:8000/predict
       SECRET_KEY_BASE: ${SECRET_KEY_BASE:-dev-only-secret-key-base-change-me}
+    volumes:
+      - prediction_uploads:/app/storage/prediction_uploads
     command: bundle exec sidekiq -C config/sidekiq.yml
     depends_on:
       db:
@@ -93,3 +97,4 @@ services:
 volumes:
   pgdata:
   redisdata:
+  prediction_uploads:

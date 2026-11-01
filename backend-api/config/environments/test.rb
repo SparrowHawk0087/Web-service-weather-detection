@@ -4,4 +4,8 @@ Rails.application.configure do
   config.consider_all_requests_local = true
   config.action_dispatch.show_exceptions = :none
   config.active_support.deprecation = :stderr
+
+  # Keep request/job specs isolated from the development Redis instance.
+  config.active_job.queue_adapter = :test
+
 end
