@@ -33,6 +33,23 @@ export const getProfile = async () => {
     return response.data
 }
 
+export const enqueuePrediction = async (file, modelId, name) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('model_id', modelId)
+    if (name) formData.append('name', name)
+
+    const response = await api.post('/predictions/async', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+}
+
+export const getPrediction = async (id) => {
+    const response = await api.get(`/predictions/${id}`)
+    return response.data
+}
+
 // Только анализ, без сохранения в историю
 export const analyzeImage = async (file, modelId) => {
     const formData = new FormData()

@@ -4,6 +4,8 @@ Rails.application.routes.draw do
   delete "/logout", to: "sessions#destroy"
   get    "/profile", to: "profile#show"
 
+  mount ActionCable.server => "/cable"
+
   resources :predictions, only: [:index, :show, :create, :update, :destroy] do
     collection do
       post :analyze

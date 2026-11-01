@@ -64,6 +64,8 @@ class PredictionsController < ApplicationController
     )
 
     begin
+      # Publish the initial state before the worker can move it forward.
+      PredictionStatusBroadcaster.broadcast(prediction)
       enqueued_job = AnalyzePredictionJob.perform_later(prediction.id)
       unless enqueued_job && enqueued_job.respond_to?(:successfully_enqueued?) && enqueued_job.successfully_enqueued?
         raise "Active Job did not enqueue the prediction"
@@ -193,7 +195,8 @@ class PredictionsController < ApplicationController
       processing_duration_ms: prediction.processing_duration_ms,
       error_code: prediction.error_code,
       created_at: prediction.created_at,
-      finished_at: prediction.finished_at
+      finished_at: prediction.finished_at,
+      updated_at: prediction.updated_at
     }
   end
 

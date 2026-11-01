@@ -43,6 +43,7 @@ class AnalyzePredictionJob < ApplicationJob
       started_at: nil,
       retry_count: prediction.retry_count + 1
     )
+    PredictionStatusBroadcaster.broadcast(prediction) if prediction
     raise
   rescue MlService::WeatherPredictionClient::RejectedFileError => error
     prediction&.fail!(
