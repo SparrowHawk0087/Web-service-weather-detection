@@ -2,11 +2,11 @@ require "rack/test"
 
 module RequestHelpers
   def auth_headers(token)
-    { "Authorization" => "Token token=#{token}" }
+    { "Authorization" => ActionController::HttpAuthentication::Token.encode_credentials(token) }
   end
 
   def token_for(user)
-    _, raw = AuthToken.issue(user: user, kind: "session")
+    _, raw = AuthToken.issue(user: user, kind: "session", expires_at: 30.days.from_now)
     raw
   end
 
