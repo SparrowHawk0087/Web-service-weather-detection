@@ -23,7 +23,19 @@
 
 ## Быстрый старт через Docker Compose
 
-Из корня репозитория:
+Из корня репозитория сначала создай локальный файл переменных окружения:
+
+```bash
+cp .env.example .env
+sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$(openssl rand -hex 24)/" .env
+sed -i "s/^SECRET_KEY_BASE=.*/SECRET_KEY_BASE=$(openssl rand -hex 64)/" .env
+```
+
+Файл `.env` игнорируется Git и содержит локальные секреты. Не добавляй его в коммиты. Если используешь уже созданный PostgreSQL volume от старой конфигурации, не меняй пароль только в `.env`: значение должно совпадать с паролем пользователя в существующей БД. Сначала обнови пароль PostgreSQL командой `ALTER USER`, затем укажи новое значение в `.env`.
+
+Для другого адреса frontend измени `CORS_ALLOWED_ORIGINS` в `.env`, перечислив origins через запятую.
+
+Затем запусти сервисы:
 
 ```bash
 docker compose up --build
@@ -55,6 +67,8 @@ docker compose down
 ```bash
 docker compose down -v
 ```
+
+> `docker compose down -v` удаляет PostgreSQL volume и загруженные изображения. Не используй эту команду, если нужно сохранить локальные данные.
 
 ## Управляемые сценарии mock ML
 
