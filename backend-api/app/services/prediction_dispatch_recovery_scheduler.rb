@@ -1,7 +1,7 @@
 # Runs as a small dedicated process, separate from web and Sidekiq workers.
 # The DB row lock and retry window make overlapping scheduler processes safe.
 class PredictionDispatchRecoveryScheduler
-  INTERVAL = 60.seconds
+  INTERVAL_SECONDS = 60
 
   def self.run
     Rails.logger.info("[PredictionDispatchRecoveryScheduler] started")
@@ -15,7 +15,7 @@ class PredictionDispatchRecoveryScheduler
         )
       end
 
-      sleep INTERVAL
+      sleep INTERVAL_SECONDS
     end
   end
 end
