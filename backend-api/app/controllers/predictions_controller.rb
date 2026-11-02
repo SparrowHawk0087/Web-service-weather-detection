@@ -41,7 +41,8 @@ class PredictionsController < ApplicationController
   end
 
   # POST /predictions/async
-  # Stores the image and schedules classification in Sidekiq.
+  # Persists the prediction and its outbox entry in the same DB transaction.
+  # Queue delivery may be retried asynchronously if Redis is unavailable.
   def enqueue
     uploaded_file = params[:file]
     unless uploaded_file.respond_to?(:tempfile)
@@ -49,55 +50,42 @@ class PredictionsController < ApplicationController
     end
 
     prediction = nil
+    dispatch = nil
     storage_key = PredictionImageStorage.store!(uploaded_file)
     image_path = PredictionImageStorage.path_for(storage_key)
     model_id = params[:model_id].presence || "vision-v1"
 
-    prediction = current_user.predictions.create!(
-      name: params[:name].presence || File.basename(uploaded_file.original_filename),
-      status: "pending",
-      storage_key: storage_key,
-      original_filename: File.basename(uploaded_file.original_filename),
-      image_size_bytes: uploaded_file.size,
-      image_checksum: Digest::SHA256.file(image_path).hexdigest,
-      ml_model_version: model_id
-    )
-
-    begin
-      # Publish the initial state before the worker can move it forward.
-      PredictionStatusBroadcaster.broadcast(prediction)
-      enqueued_job = AnalyzePredictionJob.perform_later(prediction.id)
-      unless enqueued_job && enqueued_job.respond_to?(:successfully_enqueued?) && enqueued_job.successfully_enqueued?
-        raise "Active Job did not enqueue the prediction"
-      end
-    rescue StandardError => error
-      Rails.logger.error(
-        "[PredictionsController#enqueue] Failed to enqueue prediction_id=#{prediction.id}: " \
-        "#{error.class}: #{error.message}"
-      )
-      prediction.fail!(
-        error_code: "QUEUE_UNAVAILABLE",
-        error_message: "Не удалось добавить анализ в очередь"
+    Prediction.transaction do
+      prediction = current_user.predictions.create!(
+        name: params[:name].presence || File.basename(uploaded_file.original_filename),
+        status: "pending",
+        storage_key: storage_key,
+        original_filename: File.basename(uploaded_file.original_filename),
+        image_size_bytes: uploaded_file.size,
+        image_checksum: Digest::SHA256.file(image_path).hexdigest,
+        ml_model_version: model_id
       )
 
-      return render json: {
-        error: "Сервис обработки временно недоступен",
-        prediction: prediction_summary(prediction)
-      }, status: :service_unavailable
+      # This row is committed atomically with Prediction. It survives a Rails
+      # crash before or during the Redis enqueue operation.
+      dispatch = PredictionDispatch.create!(prediction: prediction)
     end
+
+    PredictionStatusBroadcaster.broadcast(prediction)
+    PredictionDispatchService.call(dispatch.id)
 
     render json: {
       status: "accepted",
       prediction: prediction_summary(prediction)
     }, status: :accepted
   rescue PredictionImageStorage::InvalidUpload => error
-    PredictionImageStorage.delete!(storage_key) if storage_key.present? && prediction.nil?
+    PredictionImageStorage.delete!(storage_key) if storage_key.present? && !prediction&.persisted?
     render json: { error: error.message }, status: :unprocessable_content
   rescue ActiveRecord::RecordInvalid => error
-    PredictionImageStorage.delete!(storage_key) if storage_key.present? && prediction.nil?
+    PredictionImageStorage.delete!(storage_key) if storage_key.present? && !prediction&.persisted?
     render json: { error: error.record.errors.full_messages }, status: :unprocessable_entity
   rescue ActiveRecord::RecordNotUnique
-    PredictionImageStorage.delete!(storage_key) if storage_key.present? && prediction.nil?
+    PredictionImageStorage.delete!(storage_key) if storage_key.present? && !prediction&.persisted?
     render json: { error: "Это изображение уже было отправлено на анализ" }, status: :conflict
   end
 
