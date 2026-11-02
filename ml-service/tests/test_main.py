@@ -48,6 +48,15 @@ class MockPredictionTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(error.exception.status_code, 503)
 
+    async def test_internal_error_scenario_returns_server_error(self):
+        with patch.object(main, "MOCK_SCENARIO", "internal_error"), patch.object(
+            main, "MOCK_DELAY_SECONDS", 0
+        ):
+            with self.assertRaises(HTTPException) as error:
+                await main.predict_weather(make_upload(), "vision-v1")
+
+        self.assertEqual(error.exception.status_code, 500)
+
     async def test_first_n_failures_then_success(self):
         with (
             patch.object(main, "MOCK_SCENARIO", "snow"),
