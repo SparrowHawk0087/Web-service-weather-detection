@@ -16,6 +16,7 @@
 | Sidekiq | Выполнение фоновой задачи |
 | FastAPI mock | Имитация ML API и управляемые тестовые ответы |
 | ActionCable | Push-обновления статусов в браузер |
+| Sidekiq Web | Мониторинг очереди, выполняющихся задач, retry и failed jobs; HTTP Basic Auth |
 
 ## Последовательность обработки
 
@@ -107,8 +108,26 @@ sequenceDiagram
 | `GET` | `/predictions` | Получить историю пользователя |
 | `GET` | `/predictions/:id` | Получить конкретный prediction |
 | WebSocket | `/cable` | Получать события ActionCable |
+| HTTP | `/sidekiq` | Sidekiq Web UI; HTTP Basic Auth, credentials обязательны для доступа |
 
 Событие ActionCable имеет тип `prediction.updated` и содержит объект `prediction` со статусом, результатом или `error_code`. Доступ к потоку ограничен пользователем, прошедшим аутентификацию.
+
+React hook использует ActionCable consumer. Библиотека отвечает за повторное открытие соединения после разрыва. Callback `connected` вызывается и при первоначальном подключении, и после восстановления; Dashboard в этот момент запрашивает актуальную историю, чтобы закрыть пропуски событий во время разрыва.
+
+### Sidekiq Web UI
+
+Адрес в локальной Docker-среде: `http://localhost:3000/sidekiq`.
+
+Задай в локальном `.env` оба параметра:
+
+```dotenv
+SIDEKIQ_WEB_USERNAME=your-monitoring-user
+SIDEKIQ_WEB_PASSWORD=replace-with-a-long-random-password
+```
+
+HTTP Basic Auth применяется ко всем запросам Web UI. При отсутствии одного или обоих значений доступ закрыт (fail closed). Не используй учётные данные БД и не публикуй интерфейс без HTTPS и сетевого ограничения доступа.
+
+В API-only Rails приложении Sidekiq Web использует отдельные cookie и session middleware для CSRF-защиты своих форм. Эти middleware добавлены к Rack-приложению Sidekiq Web, а не включены глобально для JSON API.
 
 ## Управление mock ML-сервисом
 
@@ -157,12 +176,13 @@ docker compose exec -e RAILS_ENV=test backend-api bin/rails db:prepare
 docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec
 ```
 
-Точечные проверки фоновой задачи и интеграционного конвейера:
+Интеграционные проверки фоновой задачи, множественных независимых отправок, Sidekiq Web UI и retry:
 
 ```bash
 docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec \
   spec/jobs/analyze_prediction_job_spec.rb \
-  spec/requests/prediction_pipeline_integration_spec.rb
+  spec/requests/prediction_pipeline_integration_spec.rb \
+  spec/requests/sidekiq_web_spec.rb
 ```
 
 Unit-тесты mock ML-сервиса:
@@ -188,6 +208,25 @@ docker compose logs -f sidekiq ml-service
 ```bash
 docker compose ps
 ```
+
+## Демонстрация параллельных задач и переподключения WebSocket
+
+1. Установи `MOCK_DELAY_SECONDS=5` и `MOCK_SCENARIO=rain` в `.env`, затем пересоздай mock и worker:
+
+   ```bash
+   docker compose up -d --force-recreate ml-service sidekiq
+   ```
+
+2. Отправь несколько разных изображений в Dashboard в короткий промежуток времени. В Sidekiq Web проверь очередь, активные задачи и завершённые задания. Worker настроен на concurrency 5. При достаточной нагрузке несколько задач должны выполняться одновременно.
+3. Открой DevTools → Network → WS и найди соединение `/cable`. Во время обработки перезапусти backend:
+
+   ```bash
+   docker compose restart backend-api
+   ```
+
+4. Убедись, что ActionCable восстанавливает соединение, а Dashboard повторно запрашивает историю после callback `connected`. Это ручная демонстрационная проверка; автоматический RSpec не имитирует реальный TCP/WebSocket разрыв браузерного соединения.
+
+После проверки верни `MOCK_DELAY_SECONDS=1` и `MOCK_SCENARIO=random`, затем пересоздай `ml-service`.
 
 ## Ограничения текущей реализации
 
