@@ -15,6 +15,13 @@ module BackendApi
     config.api_only = true
 
     config.active_job.queue_adapter = :sidekiq
+
+    # Sidekiq Web is mounted inside this API-only Rails app. Configure a
+    # dedicated cookie session store for its CSRF protection; the middleware
+    # is enabled only for the Sidekiq Web Rack application.
+    config.session_store :cookie_store,
+                         key: "_web_service_weather_detection_sidekiq_session"
+
     config.filter_parameters += %i[
       token
       api_token
