@@ -1,7 +1,7 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 require 'spec_helper'
 require "action_cable"
-if ENV["RAILS_ENV"].present? && ENV["RAILS_ENV"] != "test"
+if ENV["RAILS_ENV"] && !ENV["RAILS_ENV"].empty? && ENV["RAILS_ENV"] != "test"
   abort(
     "RSpec must run with RAILS_ENV=test (current: #{ENV['RAILS_ENV']}). " \
     "Use: docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec"
