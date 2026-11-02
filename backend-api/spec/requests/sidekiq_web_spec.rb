@@ -1,4 +1,5 @@
 require "rails_helper"
+require "base64"
 
 RSpec.describe "Sidekiq Web UI", type: :request do
   around do |example|
@@ -25,18 +26,21 @@ RSpec.describe "Sidekiq Web UI", type: :request do
     ENV.delete("SIDEKIQ_WEB_USERNAME")
     ENV.delete("SIDEKIQ_WEB_PASSWORD")
 
-    get "/sidekiq/", headers: {
-      "Authorization" => Rack::Auth::Basic.encode_credentials("monitor", "test-only-password")
-    }
+    get "/sidekiq/", headers: { "Authorization" => basic_auth_header }
 
     expect(response).to have_http_status(:unauthorized)
   end
 
   it "allows access with the configured credentials" do
-    get "/sidekiq/", headers: {
-      "Authorization" => Rack::Auth::Basic.encode_credentials("monitor", "test-only-password")
-    }
+    get "/sidekiq/", headers: { "Authorization" => basic_auth_header }
 
     expect(response.status).to be_between(200, 399)
+  end
+
+  private
+
+  def basic_auth_header
+    credentials = Base64.strict_encode64("monitor:test-only-password")
+    "Basic #{credentials}"
   end
 end
