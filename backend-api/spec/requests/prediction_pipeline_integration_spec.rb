@@ -124,6 +124,10 @@ RSpec.describe "Prediction pipeline integration", type: :request do
     expect(dispatch.attempt_count).to eq(1)
     expect(dispatch.last_error).to include("Redis unavailable")
 
+    # The first enqueue failure was simulated above. Restore Active Job's
+    # real test-adapter implementation before exercising recovery.
+    allow(AnalyzePredictionJob).to receive(:perform_later).and_call_original
+
     dispatch.update!(last_attempt_at: 2.minutes.ago)
 
     expect do
