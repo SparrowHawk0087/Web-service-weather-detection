@@ -3,10 +3,11 @@ require "rails_helper"
 RSpec.describe "Predictions analyze", type: :request do
   let(:user) { create(:user) }
   let(:headers) { auth_headers(token_for(user)) }
-  let!(:rain) { create(:weather_condition, code: "RAIN") }
+  let!(:rain) { WeatherCondition.find_or_create_by!(code: "RAIN") }
 
   before do
-    create(:weather_condition_translation, weather_condition: rain, locale: "ru", name: "Дождь")
+    translation = rain.translations.find_or_initialize_by(locale: "ru")
+    translation.update!(name: "Дождь")
   end
 
   it "возвращает классификацию и переводит код в название" do
