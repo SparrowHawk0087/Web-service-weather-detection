@@ -3,10 +3,11 @@ require "rails_helper"
 RSpec.describe "Predictions happy path", type: :request do
   let(:email) { "driver-#{SecureRandom.hex(4)}@example.com" }
   let(:password) { "password123" }
-  let!(:rain) { create(:weather_condition, code: "RAIN") }
+  let!(:rain) { WeatherCondition.find_or_create_by!(code: "RAIN") }
 
   before do
-    create(:weather_condition_translation, weather_condition: rain, locale: "ru", name: "Дождь")
+    translation = rain.translations.find_or_initialize_by(locale: "ru")
+    translation.update!(name: "Дождь")
   end
 
   it "проводит пользователя от регистрации до удаления записи", :aggregate_failures do
