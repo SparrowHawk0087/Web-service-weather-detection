@@ -18,6 +18,7 @@
 | `backend-api/` | Ruby on Rails 8.1 | API, аутентификация, хранение predictions |
 | База данных | PostgreSQL | Пользователи и результаты классификации |
 | Очередь | Redis + Sidekiq 8 | Фоновая обработка и повторные попытки |
+| Recovery | Отдельный Rails-процесс `dispatch-recovery` | Восстановление неотправленных outbox-записей |
 | `ml-service/` | Python + FastAPI | Mock API модели классификации |
 | Real-time | ActionCable | Push-обновление статусов через WebSocket |
 
@@ -120,6 +121,8 @@ docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec
 ```bash
 docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec \
   spec/jobs/analyze_prediction_job_spec.rb \
+  spec/jobs/recover_prediction_dispatches_job_spec.rb \
+  spec/services/prediction_dispatch_service_spec.rb \
   spec/requests/prediction_pipeline_integration_spec.rb \
   spec/requests/sidekiq_web_spec.rb
 ```
@@ -139,7 +142,7 @@ docker compose exec frontend npm run build
 Просмотр логов:
 
 ```bash
-docker compose logs -f backend-api sidekiq ml-service
+docker compose logs -f backend-api sidekiq dispatch-recovery ml-service
 ```
 
 ### Sidekiq Web UI

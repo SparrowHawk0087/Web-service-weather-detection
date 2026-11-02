@@ -103,6 +103,48 @@ RSpec.describe "Prediction pipeline integration", type: :request do
     end if owners
   end
 
+  it "keeps the prediction recoverable when Redis is unavailable during enqueue" do
+    # Exercise the dispatcher contract deterministically: first call fails as
+    # Redis would, the recovery call is acknowledged successfully. Actual
+    # Active Job adapter enqueue behavior is covered by the service/job specs.
+    enqueued_prediction_ids = []
+    allow(AnalyzePredictionJob).to receive(:perform_later) do |prediction_id|
+      enqueued_prediction_ids << prediction_id
+      raise StandardError, "Redis unavailable" if enqueued_prediction_ids.one?
+
+      double(successfully_enqueued?: true)
+    end
+
+    post "/predictions/async",
+         params: {
+           file: upload_fixture("sample.png", "image/png"),
+           model_id: "vision-v1"
+         },
+         headers: headers
+
+    expect(response).to have_http_status(:accepted)
+
+    prediction = Prediction.find_by!(user: user)
+    dispatch = prediction.dispatch
+
+    expect(prediction.status).to eq("pending")
+    expect(dispatch).to be_present
+    expect(dispatch.dispatched_at).to be_nil
+    expect(dispatch.attempt_count).to eq(1)
+    expect(dispatch.last_error).to include("Redis unavailable")
+    expect(enqueued_prediction_ids).to eq([prediction.id])
+
+    dispatch.update!(last_attempt_at: 2.minutes.ago)
+
+    expect do
+      RecoverPredictionDispatchesJob.perform_now
+    end.to change { dispatch.reload.dispatched_at }.from(nil)
+
+    expect(enqueued_prediction_ids).to eq([prediction.id, prediction.id])
+    expect(dispatch.attempt_count).to eq(2)
+    expect(dispatch.last_error).to be_nil
+  end
+
   it "retries a transient ML failure and completes when the service recovers" do
     weather_condition = condition
     allow(WeatherCondition).to receive(:active).and_return(
