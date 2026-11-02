@@ -120,7 +120,8 @@ docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec
 ```bash
 docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec \
   spec/jobs/analyze_prediction_job_spec.rb \
-  spec/requests/prediction_pipeline_integration_spec.rb \\\n  spec/requests/sidekiq_web_spec.rb
+  spec/requests/prediction_pipeline_integration_spec.rb \
+  spec/requests/sidekiq_web_spec.rb
 ```
 
 Unit-тесты FastAPI mock:
