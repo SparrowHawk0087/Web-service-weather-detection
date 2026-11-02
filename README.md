@@ -142,7 +142,6 @@ docker compose exec frontend npm run build
 docker compose logs -f backend-api sidekiq ml-service
 ```
 
-
 ### Sidekiq Web UI
 
 Для мониторинга очередей открой `http://localhost:3000/sidekiq`. Интерфейс защищён HTTP Basic Authentication. Укажи собственные значения в локальном `.env`:
@@ -153,9 +152,6 @@ SIDEKIQ_WEB_PASSWORD=replace-with-a-long-random-password
 ```
 
 Создай отдельный пароль для мониторинга и не используй пароль от PostgreSQL или Rails. Если одно или оба значения не заданы, Sidekiq Web UI отклоняет все запросы. Не публикуй этот интерфейс в интернет без HTTPS и дополнительного ограничения доступа.
-
-Добавь адрес в таблицу сервисов:
-| Sidekiq Web UI | http://localhost:3000/sidekiq |
 
 ### Демонстрация нескольких задач и переподключения WebSocket
 
