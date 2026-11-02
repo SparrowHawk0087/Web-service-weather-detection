@@ -5,7 +5,7 @@ RSpec.describe "Prediction pipeline integration", type: :request do
 
   let(:user) { create(:user) }
   let(:headers) { auth_headers(token_for(user)) }
-  let(:condition) { create(:weather_condition, code: "RAIN") }
+  let(:condition) { WeatherCondition.find_or_create_by!(code: "RAIN") }
 
   after do
     Prediction.where(user: user).find_each do |prediction|
