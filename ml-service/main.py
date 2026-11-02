@@ -127,10 +127,14 @@ def _build_prediction():
     ]
 
     remaining_confidence = round(1.0 - confidence, 2)
-    first_probability = round(
-        random.uniform(0.1, 0.9) * remaining_confidence,
-        2,
+    # Fixed scenarios produce fully repeatable confidence values.
+    # Random mode keeps some variation for a more realistic demo.
+    split_ratio = (
+        random.uniform(0.1, 0.9)
+        if MOCK_SCENARIO == "random"
+        else 0.6
     )
+    first_probability = round(split_ratio * remaining_confidence, 2)
     second_probability = round(remaining_confidence - first_probability, 2)
 
     probabilities = {
