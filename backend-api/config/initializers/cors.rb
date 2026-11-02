@@ -1,19 +1,19 @@
-# CORS (Cross-Origin Resource Sharing) — allow the frontend from a DIFFERENT origin
-# to access the API.
+# Keep browser access limited to explicitly configured frontend origins.
+# The API uses Authorization headers, so credentialed cookies are not required.
+allowed_origins = ENV.fetch(
+  "CORS_ALLOWED_ORIGINS",
+  "http://localhost:5173,http://127.0.0.1:5173"
+).split(",").map(&:strip).reject(&:empty?)
 
-# rack-cors is middleware
-# it intercepts OPTIONS preflight requests and adds
-# Access-Control-Allow-* headers to responses.
+raise "CORS_ALLOWED_ORIGINS must contain at least one origin" if allowed_origins.empty?
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    # Allowed origins. "*" means any origin acceptable 
-    origins "*"
+    origins(*allowed_origins)
 
-    # Which resources and access rules we allow
     resource "*",
-      headers: :any,                       # any headers (Authorization is needed!)
+      headers: :any,
       methods: [:get, :post, :put, :patch, :delete, :options, :head],
-      max_age: 600                         # cache preflight for 10 minutes
+      max_age: 600
   end
 end

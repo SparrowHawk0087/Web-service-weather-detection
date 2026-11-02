@@ -17,8 +17,11 @@ module BackendApi
     config.active_job.queue_adapter = :sidekiq
     config.filter_parameters += %i[
       token
+      api_token
+      token_digest
       password
       password_confirmation
+      email
     ]
   end
 end
