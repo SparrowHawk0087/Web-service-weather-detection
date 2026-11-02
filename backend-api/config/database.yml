@@ -3,8 +3,8 @@ default: &default
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
   host: <%= ENV.fetch("DB_HOST", "127.0.0.1") %>
-  username: <%= ENV.fetch("DB_USER", "chessman") %>
-  password: <%= ENV.fetch("DB_PASSWORD", "070606Vob007") %>
+  username: <%= ENV.fetch("DB_USER") { raise "DB_USER must be set in the environment" } %>
+  password: <%= ENV.fetch("DB_PASSWORD") { raise "DB_PASSWORD must be set in the environment" } %>
 
 development:
   <<: *default
