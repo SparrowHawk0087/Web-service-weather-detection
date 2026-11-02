@@ -104,7 +104,16 @@ RSpec.describe "Prediction pipeline integration", type: :request do
   end
 
   it "keeps the prediction recoverable when Redis is unavailable during enqueue" do
-    allow(AnalyzePredictionJob).to receive(:perform_later).and_raise(StandardError, "Redis unavailable")
+    # Simulate a Redis outage at the queue adapter boundary, while keeping
+    # AnalyzePredictionJob.perform_later itself untouched.
+    queue_adapter = AnalyzePredictionJob.queue_adapter
+    enqueue_calls = 0
+    allow(queue_adapter).to receive(:enqueue).and_wrap_original do |original, job|
+      enqueue_calls += 1
+      raise StandardError, "Redis unavailable" if enqueue_calls == 1
+
+      original.call(job)
+    end
 
     post "/predictions/async",
          params: {
@@ -123,10 +132,6 @@ RSpec.describe "Prediction pipeline integration", type: :request do
     expect(dispatch.dispatched_at).to be_nil
     expect(dispatch.attempt_count).to eq(1)
     expect(dispatch.last_error).to include("Redis unavailable")
-
-    # The first enqueue failure was simulated above. Restore Active Job's
-    # real test-adapter implementation before exercising recovery.
-    allow(AnalyzePredictionJob).to receive(:perform_later).and_call_original
 
     dispatch.update!(last_attempt_at: 2.minutes.ago)
 
