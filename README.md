@@ -115,12 +115,12 @@ docker compose exec -e RAILS_ENV=test backend-api bin/rails db:prepare
 docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec
 ```
 
-Интеграционные проверки конвейера и Sidekiq:
+Интеграционные проверки конвейера, нескольких независимых заданий, Sidekiq Web UI и retry:
 
 ```bash
 docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec \
   spec/jobs/analyze_prediction_job_spec.rb \
-  spec/requests/prediction_pipeline_integration_spec.rb
+  spec/requests/prediction_pipeline_integration_spec.rb \\\n  spec/requests/sidekiq_web_spec.rb
 ```
 
 Unit-тесты FastAPI mock:
@@ -162,7 +162,7 @@ SIDEKIQ_WEB_PASSWORD=replace-with-a-long-random-password
    ```bash
    docker compose up -d --force-recreate ml-service sidekiq
    ```
-2. В Dashboard быстро отправь несколько разных изображений. Открой Sidekiq Web UI и проверь очередь, активные задачи и завершённые задания. Worker настроен на concurrency 5; при достаточной нагрузке несколько задач должны выполняться одновременно.
+2. Открой три отдельные сессии браузера (например, три профиля) и войди под разными тестовыми пользователями. Отправь по одному изображению из каждой сессии почти одновременно. Открой Sidekiq Web UI и проверь очередь, активные задачи и завершённые задания. Worker настроен на concurrency 5; при достаточной нагрузке несколько задач должны выполняться одновременно. Один Dashboard ограничивает повторную отправку, пока текущий анализ активен.
 3. В DevTools открой Network → WS и найди соединение `/cable`. Пока одна задача обрабатывается, перезапусти Rails API:
    ```bash
    docker compose restart backend-api
