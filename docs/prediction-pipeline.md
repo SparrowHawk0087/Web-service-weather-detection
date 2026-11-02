@@ -9,14 +9,40 @@
 | Компонент | Ответственность |
 | --- | --- |
 | React + Vite | Загрузка изображения, история, отображение статусов и результата |
-| Rails API | Аутентификация, приём файла, запись prediction, выдача API |
-| PostgreSQL | Пользователи, predictions, погодные классы и результаты |
+| Rails API | Аутентификация, приём файла, атомарная запись prediction + outbox, выдача API |
+| PostgreSQL | Пользователи, predictions, outbox отправки заданий, погодные классы и результаты |
 | Shared Docker volume | Передача сохранённого изображения между Rails и Sidekiq |
 | Redis | Брокер фоновых задач Sidekiq и pub/sub для ActionCable |
 | Sidekiq | Выполнение фоновой задачи |
+| Dispatch recovery | Периодический поиск и повторная отправка не доставленных outbox-записей |
 | FastAPI mock | Имитация ML API и управляемые тестовые ответы |
 | ActionCable | Push-обновления статусов в браузер |
 | Sidekiq Web | Мониторинг очереди, выполняющихся задач, retry и failed jobs; HTTP Basic Auth |
+
+## Надёжная постановка задач (Transactional Outbox)
+
+Создание prediction и намерения поставить задачу в очередь выполняется в одной транзакции PostgreSQL:
+
+1. Rails сохраняет `Prediction` со статусом `pending`.
+2. В той же транзакции создаёт `PredictionDispatch`, связанный с prediction.
+3. После commit `PredictionDispatchService` пытается выполнить `AnalyzePredictionJob.perform_later`.
+4. При подтверждённой постановке записывает `dispatched_at`. Если Redis недоступен или enqueue не подтверждён, запись остаётся неотправленной, а причина сохраняется в `last_error`.
+5. Отдельный контейнер `dispatch-recovery` запускает `RecoverPredictionDispatchesJob` раз в 60 секунд. Он выбирает неотправленные записи, последняя попытка которых была не менее 45 секунд назад, и повторяет dispatch.
+
+Перед обращением к Redis сервис блокирует конкретную строку outbox через `SELECT ... FOR UPDATE`, увеличивает `attempt_count` и сохраняет `last_attempt_at`. Поэтому несколько экземпляров recovery-процесса не должны одновременно отправлять одну и ту же запись. Если Rails завершится после Redis enqueue, но до записи `dispatched_at`, повторная постановка всё же возможна. Это намеренная семантика *at-least-once*: `Prediction#claim!` атомарно переводит prediction из `pending` в `processing`, поэтому только один из дублирующих jobs сможет начать анализ.
+
+Важно: `dispatched_at` подтверждает, что Active Job принял задачу для очереди, а не что анализ завершился. Результат по-прежнему фиксируется в `Prediction`.
+
+Проверить работу восстановления можно так:
+
+```bash
+# посмотреть логи отдельного recovery-процесса
+docker compose logs -f dispatch-recovery
+
+# проверить связанные строки outbox через Rails console
+docker compose exec backend-api bin/rails runner \
+  'p PredictionDispatch.undispatched.count'
+```
 
 ## Последовательность обработки
 
@@ -26,7 +52,8 @@ sequenceDiagram
     actor User
     participant UI as React UI
     participant API as Rails API
-    participant DB as PostgreSQL
+    participant DB as PostgreSQL (predictions + outbox)
+    participant Recovery as Dispatch recovery
     participant FS as Shared image volume
     participant Redis
     participant Worker as Sidekiq / AnalyzePredictionJob
@@ -36,10 +63,21 @@ sequenceDiagram
     User->>UI: Выбирает изображение
     UI->>API: POST /predictions/async
     API->>FS: Сохраняет файл
-    API->>DB: Создаёт prediction со статусом pending
+    API->>DB: Транзакция: prediction pending + PredictionDispatch
     API->>Cable: Broadcast pending
-    API->>Redis: Ставит AnalyzePredictionJob в очередь
-    API-->>UI: 202 Accepted + prediction
+    API->>Redis: Пытается поставить AnalyzePredictionJob
+    alt Redis принял задачу
+        API->>DB: Записывает dispatched_at
+    else Redis недоступен / enqueue не подтверждён
+        API->>DB: Оставляет outbox неотправленным, сохраняет last_error
+        Note over Recovery,DB: Recovery повторяет попытку после 45 секунд
+    end
+    API-->>UI: 202 Accepted + prediction (запись уже надёжно сохранена)
+    loop Каждые 60 секунд
+        Recovery->>DB: Ищет неотправленные outbox-записи
+        Recovery->>Redis: Повторяет AnalyzePredictionJob.perform_later
+        Recovery->>DB: Помечает успешную отправку dispatched_at
+    end
     Redis->>Worker: Передаёт задачу
     Worker->>DB: claim! (pending → processing)
     Worker->>Cable: Broadcast processing
