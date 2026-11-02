@@ -1,5 +1,6 @@
 require "digest"
 require "rack/auth/basic"
+require "rack/utils"
 require "sidekiq/web"
 
 Sidekiq::Web.configure do |config|
