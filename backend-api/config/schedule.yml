@@ -1,5 +1,0 @@
-recover_pending_prediction_dispatches:
-  cron: "* * * * *"
-  class: "RecoverPredictionDispatchesJob"
-  queue: "default"
-  description: "Retry prediction dispatches not confirmed in Redis"
