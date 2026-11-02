@@ -94,6 +94,27 @@ services:
       ml-service:
         condition: service_started
 
+  dispatch-recovery:
+    build:
+      context: ./backend-api
+      dockerfile: Dockerfile.dev
+    environment:
+      RAILS_ENV: development
+      DB_HOST: db
+      DB_USER: ${DB_USER:-weather}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      DB_NAME: ${DB_NAME:-web_service_weather_detection_development}
+      DB_NAME_TEST: ${DB_NAME_TEST:-web_service_weather_detection_test}
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?Set SECRET_KEY_BASE in .env}
+    command: bundle exec rails runner 'PredictionDispatchRecoveryScheduler.run'
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   frontend:
     build:
       context: ./frontend-js
