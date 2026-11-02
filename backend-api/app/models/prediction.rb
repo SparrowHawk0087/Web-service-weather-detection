@@ -5,6 +5,7 @@ class Prediction < ApplicationRecord
   belongs_to :weather_condition, optional: true
   has_many :favorites,  dependent: :destroy
   has_many :feedbacks,  dependent: :destroy
+  has_one :dispatch, class_name: "PredictionDispatch", dependent: :destroy
 
   validates :status, inclusion: { in: STATUSES }
   validates :confidence, numericality: { in: 0..1 }, allow_nil: true
