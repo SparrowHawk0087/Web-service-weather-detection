@@ -150,16 +150,17 @@ docker compose up -d --force-recreate ml-service
 
 ## Команды проверки
 
-Запуск всех Rails RSpec тестов:
+Запуск всех Rails RSpec тестов. Контейнер backend API по умолчанию работает с `RAILS_ENV=development`, поэтому нужно явно переключить команду в `test` и подготовить отдельную тестовую БД:
 
 ```bash
-docker compose exec backend-api bundle exec rspec
+docker compose exec -e RAILS_ENV=test backend-api bin/rails db:prepare
+docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec
 ```
 
 Точечные проверки фоновой задачи и интеграционного конвейера:
 
 ```bash
-docker compose exec backend-api bundle exec rspec \
+docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec \
   spec/jobs/analyze_prediction_job_spec.rb \
   spec/requests/prediction_pipeline_integration_spec.rb
 ```
