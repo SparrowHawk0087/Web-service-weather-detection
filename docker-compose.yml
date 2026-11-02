@@ -27,6 +27,10 @@ services:
   ml-service:
     build:
       context: ./ml-service
+    environment:
+      MOCK_SCENARIO: ${MOCK_SCENARIO:-random}
+      MOCK_DELAY_SECONDS: ${MOCK_DELAY_SECONDS:-1}
+      MOCK_FAIL_FIRST_N_REQUESTS: ${MOCK_FAIL_FIRST_N_REQUESTS:-0}
     ports:
       - "8000:8000"
 
