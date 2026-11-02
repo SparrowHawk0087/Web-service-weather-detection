@@ -91,6 +91,12 @@ MOCK_DELAY_SECONDS=4 docker compose up -d --force-recreate ml-service
 curl http://localhost:8000/health
 ```
 
+Запустить unit-тесты mock-сервиса внутри контейнера:
+
+```bash
+docker compose exec ml-service python -m unittest discover -s tests -v
+```
+
 Чтобы вернуться к обычному случайному результату:
 
 ```bash
