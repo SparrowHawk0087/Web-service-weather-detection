@@ -60,6 +60,49 @@ RSpec.describe "Prediction pipeline integration", type: :request do
     expect(prediction_statuses_for(user)).to include("pending", "processing", "completed")
   end
 
+  it "accepts and completes multiple independent submissions" do
+    weather_condition = condition
+    allow(WeatherCondition).to receive(:active).and_return(
+      WeatherCondition.where(id: weather_condition.id)
+    )
+    request_stub = stub_ml_success
+
+    queue_adapter = AnalyzePredictionJob.queue_adapter
+    queue_adapter.enqueued_jobs.clear
+    queue_adapter.performed_jobs.clear
+
+    owners = Array.new(3) { create(:user) }
+
+    expect do
+      owners.each do |owner|
+        post "/predictions/async",
+             params: {
+               file: upload_fixture("sample.png", "image/png"),
+               model_id: "vision-v1"
+             },
+             headers: auth_headers(token_for(owner))
+
+        expect(response).to have_http_status(:accepted)
+      end
+    end.to change(Prediction, :count).by(3)
+
+    # All submissions must be queued before the test adapter starts performing
+    # any job, matching the burst of requests handled by the real Sidekiq queue.
+    expect(queue_adapter.enqueued_jobs.size).to eq(3)
+    perform_enqueued_jobs
+    expect(queue_adapter.performed_jobs.size).to eq(3)
+
+    predictions = Prediction.where(user: owners).order(:id)
+    expect(predictions.count).to eq(3)
+    expect(predictions.map(&:status)).to all(eq("completed"))
+    expect(predictions.map(&:weather_condition_id)).to all(eq(weather_condition.id))
+    expect(request_stub).to have_been_made.times(3)
+  ensure
+    Prediction.where(user: owners).find_each do |prediction|
+      PredictionImageStorage.delete!(prediction.storage_key) if prediction.storage_key.present?
+    end if owners
+  end
+
   it "retries a transient ML failure and completes when the service recovers" do
     weather_condition = condition
     allow(WeatherCondition).to receive(:active).and_return(

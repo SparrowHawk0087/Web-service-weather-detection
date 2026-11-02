@@ -52,7 +52,7 @@ docker compose up --build -d
 | Сервис | Адрес |
 | :--- | :--- |
 | Frontend | http://localhost:5173 |
-| Backend API | http://localhost:3000 |
+| Backend API | http://localhost:3000 |\n| Sidekiq Web UI | http://localhost:3000/sidekiq |
 | Mock ML API / Swagger | http://localhost:8000/docs |
 | Проверка mock | http://localhost:8000/health |
 
@@ -115,12 +115,13 @@ docker compose exec -e RAILS_ENV=test backend-api bin/rails db:prepare
 docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec
 ```
 
-Интеграционные проверки конвейера и Sidekiq:
+Интеграционные проверки конвейера, нескольких независимых заданий, Sidekiq Web UI и retry:
 
 ```bash
 docker compose exec -e RAILS_ENV=test backend-api bundle exec rspec \
   spec/jobs/analyze_prediction_job_spec.rb \
-  spec/requests/prediction_pipeline_integration_spec.rb
+  spec/requests/prediction_pipeline_integration_spec.rb \
+  spec/requests/sidekiq_web_spec.rb
 ```
 
 Unit-тесты FastAPI mock:
@@ -140,3 +141,29 @@ docker compose exec frontend npm run build
 ```bash
 docker compose logs -f backend-api sidekiq ml-service
 ```
+
+### Sidekiq Web UI
+
+Для мониторинга очередей открой `http://localhost:3000/sidekiq`. Интерфейс защищён HTTP Basic Authentication. Укажи собственные значения в локальном `.env`:
+
+```dotenv
+SIDEKIQ_WEB_USERNAME=your-monitoring-user
+SIDEKIQ_WEB_PASSWORD=replace-with-a-long-random-password
+```
+
+Создай отдельный пароль для мониторинга и не используй пароль от PostgreSQL или Rails. Если одно или оба значения не заданы, Sidekiq Web UI отклоняет все запросы. Не публикуй этот интерфейс в интернет без HTTPS и дополнительного ограничения доступа.
+
+### Демонстрация нескольких задач и переподключения WebSocket
+
+1. Задай `MOCK_DELAY_SECONDS=5` и `MOCK_SCENARIO=rain` в `.env`, затем пересоздай mock и Worker:
+   ```bash
+   docker compose up -d --force-recreate ml-service sidekiq
+   ```
+2. Открой три отдельные сессии браузера (например, три профиля) и войди под разными тестовыми пользователями. Отправь по одному изображению из каждой сессии почти одновременно. Открой Sidekiq Web UI и проверь очередь, активные задачи и завершённые задания. Worker настроен на concurrency 5; при достаточной нагрузке несколько задач должны выполняться одновременно. Один Dashboard ограничивает повторную отправку, пока текущий анализ активен.
+3. В DevTools открой Network → WS и найди соединение `/cable`. Пока одна задача обрабатывается, перезапусти Rails API:
+   ```bash
+   docker compose restart backend-api
+   ```
+4. Убедись, что ActionCable подключается повторно, а Dashboard загружает актуальную историю после callback `connected`. Текущий hook вызывает `loadHistory` при каждом успешном подключении.
+
+После демонстрации верни `MOCK_DELAY_SECONDS=1` и `MOCK_SCENARIO=random` в `.env`, затем пересоздай `ml-service`.

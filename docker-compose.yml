@@ -49,6 +49,8 @@ services:
       ML_SERVICE_URL: http://ml-service:8000/predict
       SECRET_KEY_BASE: ${SECRET_KEY_BASE:?Set SECRET_KEY_BASE in .env}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      SIDEKIQ_WEB_USERNAME: ${SIDEKIQ_WEB_USERNAME:-}
+      SIDEKIQ_WEB_PASSWORD: ${SIDEKIQ_WEB_PASSWORD:-}
     volumes:
       - prediction_uploads:/app/storage/prediction_uploads
     command: >
