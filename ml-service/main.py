@@ -5,7 +5,6 @@ import random
 import zipfile
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
 
 
 WEATHER_CLASSES = [
@@ -51,15 +50,6 @@ _requests_seen = 0
 
 
 app = FastAPI(title="Mock ML Weather Detection Service")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 
 def _maybe_fail_first_request() -> None:
     """Return a temporary 503 for the configured number of initial requests."""
