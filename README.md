@@ -52,7 +52,7 @@ docker compose up --build -d
 | Сервис | Адрес |
 | :--- | :--- |
 | Frontend | http://localhost:5173 |
-| Backend API | http://localhost:3000 |
+| Backend API | http://localhost:3000 |\n| Sidekiq Web UI | http://localhost:3000/sidekiq |
 | Mock ML API / Swagger | http://localhost:8000/docs |
 | Проверка mock | http://localhost:8000/health |
 
