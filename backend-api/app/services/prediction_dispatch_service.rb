@@ -9,7 +9,7 @@ class PredictionDispatchService
     return false unless prediction_id
 
     job = AnalyzePredictionJob.perform_later(prediction_id)
-    unless job&.successfully_enqueued?
+    unless job && job.respond_to?(:successfully_enqueued?) && job.successfully_enqueued?
       raise "Active Job did not enqueue prediction_id=#{prediction_id}"
     end
 
