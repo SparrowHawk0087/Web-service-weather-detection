@@ -72,7 +72,6 @@ test('upsert replaces the complete record rather than merging old fields', () =>
     status: 'processing',
     confidence: null,
     probabilities: {},
-    old_frontend_field: undefined,
   })
 
   const result = upsertPrediction([existing], incoming)
