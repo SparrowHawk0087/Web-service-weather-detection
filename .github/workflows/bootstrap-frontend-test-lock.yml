@@ -27,7 +27,7 @@ jobs:
 
       - name: Generate the npm lockfile
         working-directory: frontend-js
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund
 
       - name: Commit the generated lockfile
         id: commit-lock
