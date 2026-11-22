@@ -1,6 +1,7 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import ModelAccordion from './ModelAccordion'
+import { useObjectUrl } from '../../hooks/useObjectUrl'
 
 // Словарь с рекомендациями для водителей
 const RECOMMENDATIONS = {
@@ -44,25 +45,8 @@ export default function DropZone({
   error = null,
 }) {
   const [isDragging, setIsDragging] = useState(false)
-  const [preview, setPreview] = useState(null)
+  const preview = useObjectUrl(file)
   const inputRef = useRef(null)
-
-  useEffect(() => {
-    if (!file) {
-      setPreview(null)
-      return
-    }
-
-    const isImage = file.type.startsWith('image/')
-    if (!isImage) {
-      setPreview(null)
-      return
-    }
-
-    const url = URL.createObjectURL(file)
-    setPreview(url)
-    return () => URL.revokeObjectURL(url)
-  }, [file])
 
   const handleClick = () => {
     if (loading || prediction) return

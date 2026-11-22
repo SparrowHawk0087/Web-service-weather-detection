@@ -1,29 +1,11 @@
-import { useEffect, useRef } from 'react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useObjectUrl } from '../../hooks/useObjectUrl'
 
 export default function FeedbackModal({ isOpen, onClose, file }) {
   const [text, setText] = useState('')
-  const [preview, setPreview] = useState(null)
+  const preview = useObjectUrl(file, isOpen)
   const [submitting, setSubmitting] = useState(false)
   const textareaRef = useRef(null)
-
-  // file preview
-  useEffect(() => {
-    if (!isOpen || !file) {
-      setPreview(null)
-      return
-    }
-
-    const isImage = file.type.startsWith('image/')
-    if (!isImage) {
-      setPreview(null)
-      return
-    }
-
-    const url = URL.createObjectURL(file)
-    setPreview(url)
-    return () => URL.revokeObjectURL(url)
-  }, [isOpen, file])
 
   // close hotkey Esc + block scroll
   useEffect(() => {
