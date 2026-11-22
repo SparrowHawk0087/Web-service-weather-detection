@@ -126,8 +126,8 @@ RSpec.describe PredictionSerializer do
     it "serializes timestamps as ISO 8601 UTC values" do
       payload = described_class.new(prediction, locale: "ru").as_json
 
-      expect(payload[:created_at]).to match(/Z\\z/)
-      expect(payload[:updated_at]).to match(/Z\\z/)
+      expect(payload[:created_at]).to end_with("Z")
+      expect(payload[:updated_at]).to end_with("Z")
       expect(Time.iso8601(payload[:created_at]).utc_offset).to eq(0)
     end
 
