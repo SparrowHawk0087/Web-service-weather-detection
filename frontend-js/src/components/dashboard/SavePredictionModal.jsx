@@ -52,7 +52,7 @@ export default function SavePredictionModal({ isOpen, onClose, file, prediction,
       onClose()
     } catch (err) {
       console.error('Save prediction error:', err)
-      setError(err.response?.data?.error || 'Не удалось сохранить')
+      setError(err.message || 'Не удалось сохранить')
     } finally {
       setSubmitting(false)
     }

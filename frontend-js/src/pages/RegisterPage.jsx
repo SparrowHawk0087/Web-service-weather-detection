@@ -55,11 +55,7 @@ function RegisterPage() {
             await register(form)
             navigate('/dashboard')
         } catch (err) {
-            const message = 
-                err.response?.data?.errors?.join(', ') ||
-                err.response?.data?.error ||
-                "Failed to sign up"
-            setError(message)
+            setError(err.message || "Не удалось зарегистрироваться")
         } finally {
             setLoading(false)
         }

@@ -44,15 +44,7 @@ function LoginPage() {
         } catch (err) {
             console.log('>>> login error: ', err.response?.status, err.response?.data)
 
-            const raw = 
-                err.response?.data?.errors ||
-                err.response?.data?.error
-
-            const message = Array.isArray(raw)
-            ? raw.join(", ")
-            : raw || "wrong email or password"
-
-            setError(message)
+            setError(err.message || "Неверный email или пароль")
         } finally {
             setLoading(false)
         }
