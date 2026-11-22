@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "npm run test:vitest && node --test src/domain/prediction.test.js src/api/errors.test.js",
-    "test:vitest": "vitest run"
+    "test:vitest": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

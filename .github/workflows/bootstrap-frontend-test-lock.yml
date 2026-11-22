@@ -25,9 +25,12 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Pin npm
+        run: npm install --global npm@11.21.3
+
       - name: Generate the npm lockfile
         working-directory: frontend-js
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
       - name: Commit the generated lockfile
         id: commit-lock
