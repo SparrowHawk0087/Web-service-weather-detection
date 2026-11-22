@@ -48,6 +48,8 @@ RSpec.describe "Profile API", type: :request do
     end
 
     it "requires the current password when changing email" do
+      original_email = user.email
+
       patch "/profile",
             params: { user: { email: "changed@example.com" } },
             as: :json,
@@ -55,7 +57,7 @@ RSpec.describe "Profile API", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body.dig("error", "code")).to eq("INVALID_CURRENT_PASSWORD")
-      expect(user.reload.email).to eq("user1@example.com")
+      expect(user.reload.email).to eq(original_email)
     end
 
     it "changes email when the current password is valid" do
