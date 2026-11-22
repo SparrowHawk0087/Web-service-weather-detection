@@ -121,8 +121,6 @@ services:
   frontend:
     build:
       context: ./frontend-js
-    environment:
-      VITE_API_URL: http://localhost:3000
     ports:
       - "5173:5173"
     depends_on:
