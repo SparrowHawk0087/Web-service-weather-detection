@@ -1,16 +1,27 @@
 def russian_name(code)
-  { "RAIN" => "Дождь", "FOG" => "Туман", "SNOW" => "Снег" }[code]
+  {
+    "RAIN" => "Дождь",
+    "FOG" => "Туман",
+    "SNOW" => "Снег",
+    "CLEAR" => "Ясно"
+  }[code]
 end
 
 def english_name(code)
-  { "RAIN" => "Rain", "FOG" => "Fog", "SNOW" => "Snow" }[code]
+  {
+    "RAIN" => "Rain",
+    "FOG" => "Fog",
+    "SNOW" => "Snow",
+    "CLEAR" => "Clear"
+  }[code]
 end
 
 def ru_tip(code)
   {
     "RAIN" => "Снизьте скорость, включите фары, увеличьте дистанцию.",
     "FOG"  => "Включите противотуманные фары, держитесь правой стороны.",
-    "SNOW" => "Плавно тормозите, избегайте резких манёвров."
+    "SNOW" => "Плавно тормозите, избегайте резких манёвров.",
+    "CLEAR" => "Погодные условия благоприятны для движения."
   }[code]
 end
 
@@ -18,23 +29,25 @@ def en_tip(code)
   {
     "RAIN" => "Slow down, turn on headlights, increase following distance.",
     "FOG"  => "Use fog lights, keep to the right side of the road.",
-    "SNOW" => "Brake gently, avoid sudden maneuvers."
+    "SNOW" => "Brake gently, avoid sudden maneuvers.",
+    "CLEAR" => "Weather conditions are favorable for driving."
   }[code]
 end
 
 conditions = {
   "RAIN" => { min_confidence: 0.6, display_order: 1, icon: "rain", color: "#3b82f6" },
-  "FOG"  => { min_confidence: 0.55, display_order: 2, icon: "fog",  color: "#94a3b8" },
-  "SNOW" => { min_confidence: 0.6, display_order: 3, icon: "snow", color: "#e0f2fe" }
+  "FOG"  => { min_confidence: 0.55, display_order: 2, icon: "fog", color: "#94a3b8" },
+  "SNOW" => { min_confidence: 0.6, display_order: 3, icon: "snow", color: "#e0f2fe" },
+  "CLEAR" => { min_confidence: 0.6, display_order: 4, icon: "clear", color: "#facc15" }
 }
 
 conditions.each do |code, attrs|
   wc = WeatherCondition.find_or_initialize_by(code: code)
   wc.update!(
     min_confidence: attrs[:min_confidence],
-    display_order:  attrs[:display_order],
-    metadata:       { icon: attrs[:icon], color: attrs[:color] },
-    active:         true
+    display_order: attrs[:display_order],
+    metadata: { icon: attrs[:icon], color: attrs[:color] },
+    active: true
   )
 
   {

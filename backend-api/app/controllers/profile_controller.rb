@@ -34,7 +34,12 @@ class ProfileController < ApplicationController
       incoming_settings = payload[:settings].to_h
 
       if incoming_settings.key?("animations_enabled") || incoming_settings.key?(:animations_enabled)
-        value = incoming_settings["animations_enabled"] || incoming_settings[:animations_enabled]
+        value = if incoming_settings.key?("animations_enabled")
+                  incoming_settings["animations_enabled"]
+                else
+                  incoming_settings[:animations_enabled]
+                end
+
         unless [true, false, "true", "false"].include?(value)
           return render_api_error(
             "INVALID_SETTINGS",
@@ -65,6 +70,12 @@ class ProfileController < ApplicationController
         status: :unprocessable_entity
       )
     end
+  rescue ActiveRecord::RecordNotUnique
+    render_api_error(
+      "EMAIL_TAKEN",
+      "An account with this email already exists",
+      status: :conflict
+    )
   end
 
   # PATCH /profile/password
@@ -82,10 +93,10 @@ class ProfileController < ApplicationController
       )
     end
 
-    if new_password.bytesize < 8 || new_password.bytesize > 72
+    if new_password.length < 8 || new_password.bytesize > 72
       return render_api_error(
         "INVALID_PASSWORD",
-        "The new password must contain between 8 and 72 bytes",
+        "The new password must contain at least 8 characters and no more than 72 bytes",
         status: :unprocessable_entity
       )
     end

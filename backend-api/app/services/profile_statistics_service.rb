@@ -55,7 +55,7 @@ class ProfileStatisticsService
     end
     denominator = known_counts.values.sum + unknown_count
 
-    known_classes = WEATHER_CODES.map do |code|
+    distribution = WEATHER_CODES.map do |code|
       condition = conditions[code]
       translations = condition&.translations&.to_a || []
       translation = translations.find { |item| item.locale == locale } || translations.first
@@ -69,9 +69,9 @@ class ProfileStatisticsService
       }
     end
 
-    known_classes << {
+    distribution << {
       code: "UNKNOWN",
-      label: I18n.t("profile_statistics.unknown", locale: locale, default: "Не определено"),
+      label: unknown_label,
       count: unknown_count,
       percentage: percentage(unknown_count, denominator)
     }
@@ -133,6 +133,11 @@ class ProfileStatisticsService
     return 0.0 unless denominator.positive?
 
     (count.to_f * 100 / denominator).round(2)
+  end
+
+  def unknown_label
+    default_label = locale.to_s.start_with?("en") ? "Unknown" : "Не определено"
+    I18n.t("profile_statistics.unknown", locale: locale, default: default_label)
   end
 
   def locale
