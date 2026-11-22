@@ -98,6 +98,10 @@ test('upsert ignores stale WebSocket events', () => {
   })
   const stale = prediction({
     status: 'processing',
+    weather_code: null,
+    weather_condition: null,
+    confidence: null,
+    probabilities: {},
     updated_at: '2026-11-22T10:00:02.000Z',
   })
 
