@@ -29,7 +29,7 @@ RSpec.describe "Predictions contract", type: :request do
 
     expect(ActionCable.server).to receive(:broadcast) do |stream_name, event|
       expect(stream_name).to eq("predictions:user:#{user.id}")
-      websocket_prediction = event.dig(:prediction)
+      websocket_prediction = event.dig(:prediction).deep_symbolize_keys
     end
 
     PredictionStatusBroadcaster.broadcast(prediction)
