@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_19_213836) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_02_223000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -95,6 +95,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_213836) do
     t.check_constraint "feedback_type::text = ANY (ARRAY['wrong_class'::character varying, 'bad_heatmap'::character varying, 'slow'::character varying, 'ui_issue'::character varying, 'other'::character varying]::text[])", name: "feedbacks_type_check"
     t.check_constraint "severity::text = ANY (ARRAY['low'::character varying, 'normal'::character varying, 'high'::character varying, 'critical'::character varying]::text[])", name: "feedbacks_severity_check"
     t.check_constraint "status::text = ANY (ARRAY['new'::character varying, 'triaged'::character varying, 'in_progress'::character varying, 'resolved'::character varying, 'wont_fix'::character varying, 'duplicate'::character varying]::text[])", name: "feedbacks_status_check"
+  end
+
+  create_table "prediction_dispatches", force: :cascade do |t|
+    t.bigint "prediction_id", null: false
+    t.integer "attempt_count", default: 0, null: false
+    t.datetime "last_attempt_at"
+    t.datetime "dispatched_at"
+    t.text "last_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["last_attempt_at"], name: "index_prediction_dispatches_for_recovery", where: "(dispatched_at IS NULL)"
+    t.index ["prediction_id"], name: "index_prediction_dispatches_on_prediction_id", unique: true
   end
 
   create_table "predictions", force: :cascade do |t|
@@ -210,6 +222,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_213836) do
   add_foreign_key "feedbacks", "users", column: "reviewer_id", on_delete: :nullify
   add_foreign_key "feedbacks", "users", on_delete: :nullify
   add_foreign_key "feedbacks", "weather_conditions", column: "actual_condition_id", on_delete: :nullify
+  add_foreign_key "prediction_dispatches", "predictions", on_delete: :cascade
   add_foreign_key "predictions", "users", on_delete: :cascade
   add_foreign_key "predictions", "weather_conditions", on_delete: :restrict
   add_foreign_key "weather_condition_translations", "weather_conditions", on_delete: :cascade

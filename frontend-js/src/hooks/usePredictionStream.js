@@ -2,10 +2,12 @@ import { createConsumer } from '@rails/actioncable'
 import { useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API_URL = import.meta.env.VITE_API_URL?.trim() || ''
 
 function buildCableUrl(token) {
-  const url = new URL('/cable', API_URL)
+  // Use the frontend origin by default; Vite proxies /cable to Rails.
+  // This works with localhost and remote forwarded ports (e.g. Codespaces).
+  const url = new URL('/cable', API_URL || window.location.origin)
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
   url.searchParams.set('token', token)
   return url.toString()
