@@ -90,7 +90,7 @@ describe('ProfilePage', () => {
     expect(screen.getByText('87.0%')).toBeTruthy()
     expect(screen.getByText('Туман')).toBeTruthy()
     expect(screen.getByText('Ясно')).toBeTruthy()
-    expect(screen.getByText('12 недель')).toBeTruthy()
+    expect(screen.getByText('Активность · 12 недель')).toBeTruthy()
   })
 
   it('saves account details and synchronizes AuthContext', async () => {

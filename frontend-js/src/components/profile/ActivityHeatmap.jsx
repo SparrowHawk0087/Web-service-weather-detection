@@ -31,8 +31,7 @@ export default function ActivityHeatmap({ data = [], loading = false }) {
       <div className="profile-heatmap-head">
         <div>
           <p className="profile-kicker">Активность</p>
-          <h2 className="profile-section-title">12 недель</h2>
-          <p className="profile-section-description">Каждая клетка — один календарный день</p>
+          <h2 className="profile-section-title">Активность · 12 недель</h2>
         </div>
         <div className="profile-total-chip">
           <p className="profile-total-value">{total}</p>

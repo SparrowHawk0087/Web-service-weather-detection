@@ -225,6 +225,12 @@ export default function ProfilePage() {
             )}
 
             <SecurityCard onUpdatePassword={handlePasswordUpdate} saving={savingPassword} />
+            <DangerZone
+              onClearHistory={handleClearHistory}
+              onDeleteAccount={handleDeleteAccount}
+              clearing={clearingHistory}
+              deleting={deletingAccount}
+            />
           </div>
 
           <div className="profile-analytics-column">
@@ -243,18 +249,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="profile-danger-wrap">
-          <DangerZone
-            onClearHistory={handleClearHistory}
-            onDeleteAccount={handleDeleteAccount}
-            clearing={clearingHistory}
-            deleting={deletingAccount}
-          />
-        </div>
-
-        <footer className="profile-footer">
-          FSR-WEATHER · Персональные данные и аналитика принадлежат только вашему аккаунту
-        </footer>
       </div>
     </main>
   )

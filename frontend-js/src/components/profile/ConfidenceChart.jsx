@@ -48,9 +48,7 @@ export default function ConfidenceChart({ activity = [], trend = [], loading = f
   return (
     <section className="profile-glass-card profile-chart-card">
       <div className="profile-section-head">
-        <p className="profile-kicker">Модель</p>
         <h2 className="profile-section-title">Уверенность по времени</h2>
-        <p className="profile-section-description">Среднее confidence завершённых анализов за день · 84 дня</p>
       </div>
 
       {hasResults ? (

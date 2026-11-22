@@ -830,80 +830,32 @@ input {
   text-align: center;
 }
 
-.profile-danger-wrap {
-  margin-top: 20px;
-}
-
-.profile-danger-card {
-  padding: 22px;
-  border-radius: 22px;
-}
-
-.profile-danger-kicker {
-  margin: 0 0 7px;
-  color: var(--profile-danger);
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: 1.3px;
-  text-transform: uppercase;
-}
-
-.profile-danger-title {
-  margin: 0;
-  color: var(--profile-text);
-  font-size: 17px;
-  font-weight: 750;
-}
-
-.profile-danger-description {
-  margin: 7px 0 0;
-  color: var(--profile-text-2);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.profile-danger-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  border: 1px solid var(--profile-line);
+.profile-danger-card-compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
   border-radius: 16px;
-  padding: 14px;
-  background: var(--profile-item);
-}
-
-.profile-danger-row + .profile-danger-row {
-  margin-top: 10px;
-}
-
-.profile-danger-row-title {
-  margin: 0;
-  color: var(--profile-text);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.profile-danger-row-description {
-  margin: 5px 0 0;
-  color: var(--profile-muted);
-  font-size: 11px;
-  line-height: 1.45;
+  border-color: rgba(244, 63, 94, 0.18);
+  background: rgba(20, 22, 30, 0.66);
+  box-shadow: none;
 }
 
 .profile-danger-button {
   display: inline-flex;
-  min-height: 40px;
-  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 38px;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(244, 63, 94, 0.28);
-  border-radius: 13px;
-  padding: 9px 13px;
-  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.26);
+  border-radius: 11px;
+  padding: 8px 10px;
+  background: rgba(244, 63, 94, 0.07);
   color: var(--profile-danger);
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
   cursor: pointer;
 }
 
@@ -1086,13 +1038,15 @@ input {
     gap: 4px;
   }
 
-  .profile-danger-row {
-    align-items: stretch;
-    flex-direction: column;
+  .profile-danger-card-compact {
+    gap: 7px;
+    padding: 8px;
   }
 
   .profile-danger-button {
-    width: 100%;
+    min-height: 40px;
+    padding-inline: 7px;
+    font-size: 10px;
   }
 }
 

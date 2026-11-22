@@ -7,32 +7,23 @@ export default function DangerZone({ onClearHistory, onDeleteAccount, clearing =
 
   return (
     <>
-      <section className="profile-glass-card profile-danger-card">
-        <div className="mb-4">
-          <p className="profile-danger-kicker">Управление данными</p>
-          <h2 className="profile-danger-title">Управление историей и аккаунтом</h2>
-          <p className="profile-danger-description">Необратимые действия с историей анализов и учётной записью.</p>
-        </div>
-
-        <div className="profile-danger-row">
-          <div className="min-w-0">
-            <p className="profile-danger-row-title">Очистить историю анализов</p>
-            <p className="profile-danger-row-description">Удалит историю, избранное и отзывы, связанные с вашими анализами.</p>
-          </div>
-          <button type="button" onClick={() => setClearOpen(true)} disabled={clearing || deleting} className="profile-danger-button">
-            {clearing ? 'Очистка…' : 'Очистить историю'}
-          </button>
-        </div>
-
-        <div className="profile-danger-row">
-          <div className="min-w-0">
-            <p className="profile-danger-row-title">Удалить аккаунт</p>
-            <p className="profile-danger-row-description">Аккаунт будет анонимизирован, активные токены отозваны.</p>
-          </div>
-          <button type="button" onClick={() => setDeleteOpen(true)} disabled={clearing || deleting} className="profile-danger-button is-strong">
-            {deleting ? 'Удаление…' : 'Удалить аккаунт'}
-          </button>
-        </div>
+      <section className="profile-glass-card profile-danger-card-compact" aria-label="Управление данными">
+        <button
+          type="button"
+          onClick={() => setClearOpen(true)}
+          disabled={clearing || deleting}
+          className="profile-danger-button"
+        >
+          {clearing ? 'Очистка…' : 'Очистить историю'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setDeleteOpen(true)}
+          disabled={clearing || deleting}
+          className="profile-danger-button is-strong"
+        >
+          {deleting ? 'Удаление…' : 'Удалить аккаунт'}
+        </button>
       </section>
 
       {clearOpen && <ConfirmActionModal

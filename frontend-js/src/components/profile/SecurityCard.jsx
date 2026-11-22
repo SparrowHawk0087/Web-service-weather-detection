@@ -35,9 +35,7 @@ export default function SecurityCard({ onUpdatePassword, saving = false }) {
   return (
     <section className="profile-glass-card profile-secondary-card">
       <div className="profile-section-head">
-        <p className="profile-kicker">Безопасность</p>
-        <h2 className="profile-section-title">Пароль</h2>
-        <p className="profile-section-description">После смены пароля остальные активные сессии будут завершены.</p>
+        <h2 className="profile-section-title">Безопасность</h2>
       </div>
 
       <form onSubmit={submit} className="profile-form">

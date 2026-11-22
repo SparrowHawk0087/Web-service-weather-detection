@@ -17,9 +17,7 @@ export default function WeatherDistribution({ data = [], loading = false }) {
   return (
     <section className="profile-glass-card profile-chart-card">
       <div className="profile-section-head">
-        <p className="profile-kicker">Классификация</p>
         <h2 className="profile-section-title">Распределение классов</h2>
-        <p className="profile-section-description">Только завершённые реальные результаты</p>
       </div>
 
       <div className="relative mx-auto h-52 w-full max-w-[250px]">
