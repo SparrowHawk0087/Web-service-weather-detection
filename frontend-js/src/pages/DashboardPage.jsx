@@ -55,8 +55,22 @@ export default function DashboardPage() {
   // Load one REST snapshot on mount. A snapshot is merged by id and timestamp,
   // so a newer ActionCable event cannot be overwritten by an older HTTP response.
   useEffect(() => {
-    loadHistory()
-  }, [loadHistory])
+    let active = true
+
+    getPredictions({ page: 1, perPage: HISTORY_PAGE_SIZE })
+      .then((response) => {
+        if (active) {
+          setHistory((current) => mergePredictionHistory(current, response.predictions || []))
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load prediction history:', error)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   const activePrediction = activePredictionId === null
     ? null
