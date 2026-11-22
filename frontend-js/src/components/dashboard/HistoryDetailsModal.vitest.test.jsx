@@ -24,11 +24,11 @@ function prediction(overrides = {}) {
 
 describe('HistoryDetailsModal', () => {
   it.each([
-    ['pending', 'В очереди'],
-    ['processing', 'Обработка изображения'],
-    ['failed', 'Не удалось выполнить анализ'],
-    ['cancelled', 'Анализ отменён'],
-  ])('renders the %s status without a classification result', (status, label) => {
+    ['pending', 'В очереди', 'Результат классификации появится после завершения обработки.'],
+    ['processing', 'Обработка изображения', 'Результат классификации появится после завершения обработки.'],
+    ['failed', 'Не удалось выполнить анализ', 'Попробуйте загрузить изображение ещё раз.'],
+    ['cancelled', 'Анализ отменён', 'Результат классификации появится после завершения обработки.'],
+  ])('renders the %s status without a classification result', (status, label, message) => {
     render(
       <HistoryDetailsModal
         isOpen
@@ -38,7 +38,7 @@ describe('HistoryDetailsModal', () => {
     )
 
     expect(screen.getByText(label)).toBeTruthy()
-    expect(screen.getByText('Результат классификации появится после завершения обработки.')).toBeTruthy()
+    expect(screen.getByText(message)).toBeTruthy()
     expect(screen.queryByText('Вердикт модели')).toBeNull()
   })
 
