@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useAuth } from '../../context/useAuth'
+import { getPredictionStatusLabel } from '../../domain/prediction'
 
 export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRename, onSelect }) {
   const { user } = useAuth()
@@ -29,12 +30,6 @@ export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRenam
   )
 
   const initial = user?.name?.charAt(0).toUpperCase() || '?'
-  const statusLabels = {
-    pending: 'В очереди',
-    processing: 'Обработка',
-    failed: 'Ошибка',
-    cancelled: 'Отменён',
-  }
 
   // Открывает выпадающее меню (Pin, Rename, Delete)
   const toggleMenu = (e, id) => {
@@ -62,7 +57,7 @@ export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRenam
       }
     } else if (action === 'rename') {
       if (!onRename) return
-      const current = item.name || item.weather_condition || ''
+      const current = item.name || item.weather_condition || item.weather_code || ''
       const next = window.prompt('Новое название', current)
       const trimmed = next?.trim()
       if (trimmed && trimmed !== current) {
@@ -170,14 +165,14 @@ export default function Sidebar({ onNewAnalysis, history = [], onDelete, onRenam
                             : 'bg-gray-400'
                         }`}
                       />
-                      <span className="truncate">{item.name || item.weather_condition}</span>
+                      <span className="truncate">{item.name || item.weather_condition || item.weather_code}</span>
                     </div>
                     <div className="text-white/40 text-xs mt-1 flex items-center justify-between">
                       <span>
                         {formatDate(item.created_at)} · {
                           item.status === 'completed'
                             ? `${(item.confidence * 100).toFixed(0)}%`
-                            : (statusLabels[item.status] || 'Неизвестный статус')
+                            : getPredictionStatusLabel(item.status)
                         }
                       </span>
                     </div>

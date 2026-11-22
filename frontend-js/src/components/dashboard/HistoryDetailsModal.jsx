@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import { getPredictionStatusLabel } from '../../domain/prediction'
 
 const RECOMMENDATIONS = {
   RAIN: ['Снизьте скорость и увеличьте дистанцию', 'Включите ближний свет фар', 'Остерегайтесь аквапланирования'],
@@ -35,13 +36,7 @@ export default function HistoryDetailsModal({ isOpen, onClose, item }) {
   if (!isOpen || !item) return null
 
   const isCompleted = item.status === 'completed'
-  const statusLabels = {
-    pending: 'В очереди',
-    processing: 'Обработка изображения',
-    failed: 'Не удалось выполнить анализ',
-    cancelled: 'Анализ отменён',
-  }
-  const statusText = statusLabels[item.status] || 'Неизвестный статус'
+  const statusText = getPredictionStatusLabel(item.status)
 
   // Подготавливаем данные графика только для завершённого анализа.
   const chartData = isCompleted && item.probabilities
@@ -51,11 +46,8 @@ export default function HistoryDetailsModal({ isOpen, onClose, item }) {
       })).sort((a, b) => b.value - a.value)
     : []
 
-  // Если название пришло битым (UNKNOWN), берем первый класс из графика.
-  const topClass = chartData.length > 0 ? chartData[0].name : 'UNKNOWN'
-  const displayCondition = (item.weather_condition && item.weather_condition !== 'UNKNOWN')
-    ? item.weather_condition
-    : topClass
+  const topClass = item.weather_code || chartData[0]?.name || 'UNKNOWN'
+  const displayCondition = item.weather_condition || item.weather_code || 'Погодное условие не определено'
 
   const currentTips = isCompleted
     ? (RECOMMENDATIONS[topClass] || RECOMMENDATIONS.DEFAULT)
@@ -117,7 +109,9 @@ export default function HistoryDetailsModal({ isOpen, onClose, item }) {
             </div>
             {isCompleted ? (
               <p className="text-lg font-bold text-purple-400 mb-4">
-                {(Number(item.confidence || 0) * 100).toFixed(1)}%
+                {Number.isFinite(Number(item.confidence))
+                  ? `${(Number(item.confidence) * 100).toFixed(1)}%`
+                  : '—'}
               </p>
             ) : (
               <p className="text-sm text-white/50 text-center mb-4">
@@ -168,6 +162,11 @@ export default function HistoryDetailsModal({ isOpen, onClose, item }) {
               <span className="text-white/40">Модель:</span>
               <span className="text-white/80 font-medium">{item.ml_model_version || 'Unknown'}</span>
             </div>
+            {item.status === 'failed' && item.error_code && (
+              <p className="w-full mt-2 text-xs text-red-300" role="status">
+                Код ошибки: {item.error_code}
+              </p>
+            )}
           </div>
         </div>
         

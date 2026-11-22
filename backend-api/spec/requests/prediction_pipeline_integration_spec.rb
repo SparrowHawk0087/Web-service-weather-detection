@@ -55,7 +55,7 @@ RSpec.describe "Prediction pipeline integration", type: :request do
     expect(prediction.status).to eq("completed")
     expect(prediction.weather_condition).to eq(weather_condition)
     expect(prediction.confidence).to be_within(0.001).of(0.92)
-    expect(prediction.class_probabilities["rain"]).to be_within(0.001).of(0.92)
+    expect(prediction.class_probabilities["RAIN"]).to be_within(0.001).of(0.92)
     expect(prediction.finished_at).to be_present
     expect(prediction_statuses_for(user)).to include("pending", "processing", "completed")
   end

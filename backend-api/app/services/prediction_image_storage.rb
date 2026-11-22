@@ -3,6 +3,7 @@ require "tempfile"
 
 class PredictionImageStorage
   class InvalidUpload < StandardError; end
+  class StorageUnavailable < StandardError; end
   class MissingImage < StandardError; end
 
   MAX_FILE_SIZE = 25.megabytes
@@ -38,8 +39,8 @@ class PredictionImageStorage
     end
 
     storage_key
-  rescue Errno::ENOSPC, Errno::EACCES => error
-    raise InvalidUpload, "Не удалось сохранить изображение: #{error.message}"
+  rescue Errno::ENOSPC, Errno::EACCES, Errno::EROFS, Errno::EIO => error
+    raise StorageUnavailable, "Unable to persist uploaded image: #{error.message}"
   end
 
   def self.path_for(storage_key)

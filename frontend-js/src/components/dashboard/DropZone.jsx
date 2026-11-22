@@ -1,6 +1,7 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import ModelAccordion from './ModelAccordion'
+import { useObjectUrl } from '../../hooks/useObjectUrl'
 
 // Словарь с рекомендациями для водителей
 const RECOMMENDATIONS = {
@@ -44,25 +45,8 @@ export default function DropZone({
   error = null,
 }) {
   const [isDragging, setIsDragging] = useState(false)
-  const [preview, setPreview] = useState(null)
+  const preview = useObjectUrl(file)
   const inputRef = useRef(null)
-
-  useEffect(() => {
-    if (!file) {
-      setPreview(null)
-      return
-    }
-
-    const isImage = file.type.startsWith('image/')
-    if (!isImage) {
-      setPreview(null)
-      return
-    }
-
-    const url = URL.createObjectURL(file)
-    setPreview(url)
-    return () => URL.revokeObjectURL(url)
-  }, [file])
 
   const handleClick = () => {
     if (loading || prediction) return
@@ -106,16 +90,22 @@ export default function DropZone({
   }
 
   const chartData = prediction?.probabilities
-    ? Object.entries(prediction.probabilities).map(([key, value]) => ({
-        name: key.toUpperCase(),
-        value: value,
-      })).sort((a, b) => b.value - a.value)
+    ? Object.entries(prediction.probabilities)
+        .filter(([, value]) => Number.isFinite(Number(value)) && Number(value) >= 0)
+        .map(([key, value]) => ({
+          name: key.toUpperCase(),
+          value: Number(value),
+        }))
+        .sort((a, b) => b.value - a.value)
     : []
 
   // Получаем рекомендации для текущей погоды
-  const currentTips = prediction 
+  const currentTips = prediction
     ? (RECOMMENDATIONS[prediction.weather_code] || RECOMMENDATIONS.DEFAULT)
     : []
+  const confidenceLabel = Number.isFinite(Number(prediction?.confidence))
+    ? `${(Number(prediction.confidence) * 100).toFixed(1)}%`
+    : '—'
 
   return (
     <div className="w-full max-w-4xl flex flex-col gap-3">
@@ -210,11 +200,11 @@ export default function DropZone({
                     <div className="flex items-center justify-center gap-2 mb-1">
                       <span className="text-3xl">{WEATHER_EMOJI[prediction.weather_code] || '🌤️'}</span>
                       <p className="text-3xl font-bold text-white">
-                        {prediction.weather_condition}
+                        {prediction.weather_condition || prediction.weather_code || 'Погода не определена'}
                       </p>
                     </div>
                     <p className="text-lg font-bold text-purple-400 mb-6">
-                      Уверенность: {(prediction.confidence * 100).toFixed(1)}%
+                      Уверенность: {confidenceLabel}
                     </p>
                   </div>
 

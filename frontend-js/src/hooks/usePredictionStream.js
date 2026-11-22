@@ -1,13 +1,12 @@
 import { createConsumer } from '@rails/actioncable'
 import { useEffect, useRef } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
+import { isPredictionUpdate } from '../domain/prediction'
 
 const API_URL = import.meta.env.VITE_API_URL?.trim() || ''
 
-function buildCableUrl(token) {
-  // Use the frontend origin by default; Vite proxies /cable to Rails.
-  // This works with localhost and remote forwarded ports (e.g. Codespaces).
-  const url = new URL('/cable', API_URL || window.location.origin)
+export function buildCableUrl(token, origin = window.location.origin) {
+  const url = new URL('/cable', API_URL || origin)
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
   url.searchParams.set('token', token)
   return url.toString()
@@ -34,7 +33,7 @@ export function usePredictionStream(onUpdate, onConnected) {
           onConnectedRef.current?.()
         },
         received(message) {
-          if (message?.type === 'prediction.updated' && message.prediction) {
+          if (isPredictionUpdate(message)) {
             onUpdateRef.current?.(message.prediction)
           }
         },

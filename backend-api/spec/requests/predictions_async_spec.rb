@@ -24,6 +24,11 @@ RSpec.describe "Predictions async", type: :request do
     body = response.parsed_body
     expect(body["status"]).to eq("accepted")
     expect(body.dig("prediction", "status")).to eq("pending")
+    expect(body.dig("prediction", "confidence")).to be_nil
+    expect(body.dig("prediction", "probabilities")).to eq({})
+    expect(body.dig("prediction", "image_url")).to eq("/predictions/#{Prediction.last.id}/image")
+    expect(body.dig("prediction", "image_content_type")).to eq("image/png")
+    expect(body.dig("prediction", "storage_key")).to be_nil
 
     prediction = Prediction.last
     expect(prediction.storage_key).to be_present
@@ -31,22 +36,35 @@ RSpec.describe "Predictions async", type: :request do
     expect(AnalyzePredictionJob).to have_received(:perform_later).with(prediction.id)
   end
 
-  it "возвращает 400, если файл не передан" do
+  it "returns a 422 error envelope when the file is missing" do
     post "/predictions/async", params: {}, headers: headers
 
-    expect(response).to have_http_status(:bad_request)
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.parsed_body).to include(
+      "error" => {
+        "code" => "INVALID_UPLOAD",
+        "message" => "An image file is required",
+        "details" => {}
+      }
+    )
   end
 
-  it "возвращает 503, если очередь не приняла задачу" do
+  it "keeps the accepted prediction recoverable when the queue rejects the job" do
     allow(AnalyzePredictionJob).to receive(:perform_later).and_return(false)
 
     post "/predictions/async",
          params: { file: upload_fixture("sample.png", "image/png") },
          headers: headers
 
-    expect(response).to have_http_status(:service_unavailable)
-    expect(Prediction.last.status).to eq("failed")
-    expect(Prediction.last.error_code).to eq("QUEUE_UNAVAILABLE")
+    expect(response).to have_http_status(:accepted)
+    expect(response.parsed_body["status"]).to eq("accepted")
+
+    prediction = Prediction.last
+    expect(prediction.status).to eq("pending")
+    expect(prediction.error_code).to be_nil
+    expect(prediction.dispatch.dispatched_at).to be_nil
+    expect(prediction.dispatch.attempt_count).to eq(1)
+    expect(prediction.dispatch.last_error).to include("Active Job did not enqueue")
   end
 
   it "отклоняет неподдерживаемый тип файла" do
@@ -55,6 +73,7 @@ RSpec.describe "Predictions async", type: :request do
          headers: headers
 
     expect(response).to have_http_status(:unprocessable_content)
+    expect(response.parsed_body.dig("error", "code")).to eq("INVALID_UPLOAD")
     expect(Prediction.where(user: user)).to be_empty
   end
 

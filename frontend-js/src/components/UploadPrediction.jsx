@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createPrediction } from '../api/auth'
+import { analyzePrediction } from '../api/predictions'
 
 export default function UploadPrediction() {
     const [file, setFile] = useState(null)
@@ -34,7 +34,7 @@ export default function UploadPrediction() {
         setError(null)
 
         try {
-            const response = await createPrediction(file)
+            const response = await analyzePrediction(file)
             
             if (response.status === 'success') {
                 // Переходим на страницу результата
@@ -46,7 +46,7 @@ export default function UploadPrediction() {
             }
         } catch (err) {
             console.error('Upload error:', err)
-            setError(err.response?.data?.error || 'Ошибка загрузки файла')
+            setError(err.message || 'Ошибка загрузки файла')
         } finally {
             setLoading(false)
         }

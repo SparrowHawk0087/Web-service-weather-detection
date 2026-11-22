@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 
 // colors for piechart
 const WEATHER_COLORS = {
@@ -26,15 +26,18 @@ function PieChart({ segments, size = 220 }) {
     )
   }
 
-  let cumulative = 0
-  const stops = segments
-    .map((seg) => {
-      const start = (cumulative / total) * 100
-      cumulative += seg.value
-      const end = (cumulative / total) * 100
-      return `${seg.color} ${start}% ${end}%`
-    })
-    .join(', ')
+  const { stops } = segments.reduce((result, segment) => {
+    const start = (result.cumulative / total) * 100
+    const cumulative = result.cumulative + segment.value
+    const end = (cumulative / total) * 100
+
+    return {
+      cumulative,
+      stops: [...result.stops, `${segment.color} ${start}% ${end}%`],
+    }
+  }, { cumulative: 0, stops: [] })
+
+  const gradientStops = stops.join(', ')
 
   return (
     <div
@@ -42,7 +45,7 @@ function PieChart({ segments, size = 220 }) {
       style={{
         width: size,
         height: size,
-        background: `conic-gradient(${stops})`,
+        background: `conic-gradient(${gradientStops})`,
       }}
     />
   )

@@ -93,6 +93,27 @@ RSpec.describe AnalyzePredictionJob, type: :job do
     expect(prediction.finished_at).to be_present
   end
 
+  it "marks an invalid ML result as failed without retrying it" do
+    allow(WeatherCondition).to receive(:active).and_return(WeatherCondition.where(id: condition.id))
+    client = instance_double(MlService::WeatherPredictionClient)
+    allow(MlService::WeatherPredictionClient).to receive(:new).and_return(client)
+    allow(client).to receive(:call).and_return(
+      prediction: {
+        class: "rain",
+        confidence: 0.91,
+        probabilities: { "rain" => 0.92, "snow" => 0.05, "fog" => 0.03 }
+      },
+      model_used: "vision-v1"
+    )
+
+    expect(described_class).not_to receive(:perform_later)
+    expect { described_class.perform_now(prediction.id) }.not_to raise_error
+
+    expect(prediction.reload.status).to eq("failed")
+    expect(prediction.error_code).to eq("INVALID_MODEL_RESULT")
+    expect(prediction.error_message).to include("Confidence must equal")
+  end
+
   it "marks a rejected image as failed without retrying it" do
     client = instance_double(MlService::WeatherPredictionClient)
     allow(MlService::WeatherPredictionClient).to receive(:new).and_return(client)

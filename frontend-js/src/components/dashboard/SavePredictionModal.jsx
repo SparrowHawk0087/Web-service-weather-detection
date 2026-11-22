@@ -1,28 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import { useObjectUrl } from '../../hooks/useObjectUrl'
 
 export default function SavePredictionModal({ isOpen, onClose, file, prediction, onSave }) {
   const [name, setName] = useState('')
-  const [preview, setPreview] = useState(null)
+  const preview = useObjectUrl(file, isOpen)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
   const inputRef = useRef(null)
-
-  useEffect(() => {
-    if (!isOpen) return
-    setName('')
-    setError(null)
-    setSubmitting(false)
-  }, [isOpen])
-
-  useEffect(() => {
-    if (!isOpen || !file || !file.type.startsWith('image/')) {
-      setPreview(null)
-      return
-    }
-    const url = URL.createObjectURL(file)
-    setPreview(url)
-    return () => URL.revokeObjectURL(url)
-  }, [isOpen, file])
 
   useEffect(() => {
     if (!isOpen) return
@@ -38,6 +22,13 @@ export default function SavePredictionModal({ isOpen, onClose, file, prediction,
 
   if (!isOpen || !prediction) return null
 
+  const handleClose = () => {
+    setName('')
+    setError(null)
+    setSubmitting(false)
+    onClose()
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     const trimmed = name.trim()
@@ -49,17 +40,17 @@ export default function SavePredictionModal({ isOpen, onClose, file, prediction,
     setError(null)
     try {
       await onSave(trimmed)
-      onClose()
+      handleClose()
     } catch (err) {
       console.error('Save prediction error:', err)
-      setError(err.response?.data?.error || 'Не удалось сохранить')
+      setError(err.message || 'Не удалось сохранить')
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onClose()
+    if (e.target === e.currentTarget) handleClose()
   }
 
   const weatherLabel =
@@ -77,7 +68,7 @@ export default function SavePredictionModal({ isOpen, onClose, file, prediction,
       <div className="relative w-full max-w-md rounded-3xl border border-purple-400/40 bg-[#12131b] p-6 shadow-[0_0_60px_rgba(168,85,247,0.4)]">
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition"
           aria-label="Close"
         >

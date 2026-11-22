@@ -1,6 +1,6 @@
 import { Link, useNavigate } from  'react-router-dom'
 import { useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import AuthLayout from '../components/AuthLayout'
 import MailIcon from '../components/icons/MailIcon'
 import EyeIcon from '../components/icons/EyeIcon'
@@ -44,15 +44,7 @@ function LoginPage() {
         } catch (err) {
             console.log('>>> login error: ', err.response?.status, err.response?.data)
 
-            const raw = 
-                err.response?.data?.errors ||
-                err.response?.data?.error
-
-            const message = Array.isArray(raw)
-            ? raw.join(", ")
-            : raw || "wrong email or password"
-
-            setError(message)
+            setError(err.message || "Неверный email или пароль")
         } finally {
             setLoading(false)
         }

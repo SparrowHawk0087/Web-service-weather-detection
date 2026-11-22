@@ -9,6 +9,8 @@ RSpec.describe "Predictions authorization", type: :request do
   it "возвращает 401 без токена" do
     get "/predictions"
     expect(response).to have_http_status(:unauthorized)
+    expect(response.parsed_body.dig("error", "code")).to eq("UNAUTHORIZED")
+    expect(response.parsed_body.dig("error", "details")).to eq({})
 
     post "/predictions/analyze"
     expect(response).to have_http_status(:unauthorized)
@@ -33,7 +35,7 @@ RSpec.describe "Predictions authorization", type: :request do
           headers: auth_headers(token_for(user))
 
     expect(response).to have_http_status(:not_found)
-    expect(response.parsed_body["error"]).to be_present
+    expect(response.parsed_body.dig("error", "code")).to eq("RESOURCE_NOT_FOUND")
     expect(foreign_prediction.reload.name).to eq("Чужая запись")
   end
 
@@ -41,7 +43,7 @@ RSpec.describe "Predictions authorization", type: :request do
     delete "/predictions/#{foreign_prediction.id}", headers: auth_headers(token_for(user))
 
     expect(response).to have_http_status(:not_found)
-    expect(response.parsed_body["error"]).to be_present
+    expect(response.parsed_body.dig("error", "code")).to eq("RESOURCE_NOT_FOUND")
     expect(Prediction.exists?(foreign_prediction.id)).to be(true)
   end
 end
