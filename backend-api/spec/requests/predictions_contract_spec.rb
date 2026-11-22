@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe "Predictions contract", type: :request do
   let(:user) { create(:user, locale: "ru") }
   let(:headers) { auth_headers(token_for(user)) }
-  let!(:condition) { create(:weather_condition, code: "SNOW") }
+  let!(:condition) { WeatherCondition.find_or_create_by!(code: "SNOW") }
   let!(:prediction) do
     create(
       :prediction,
@@ -20,7 +20,8 @@ RSpec.describe "Predictions contract", type: :request do
   end
 
   before do
-    condition.translations.create!(locale: "ru", name: "Снег")
+    condition.update!(active: true, deleted_at: nil)
+    condition.translations.find_or_initialize_by(locale: "ru").update!(name: "Снег")
   end
 
   it "returns the same prediction object through REST and ActionCable" do

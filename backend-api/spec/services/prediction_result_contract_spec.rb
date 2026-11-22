@@ -1,7 +1,11 @@
 require "rails_helper"
 
 RSpec.describe PredictionResultContract do
-  let!(:rain_condition) { create(:weather_condition, code: "RAIN", active: true) }
+  let!(:rain_condition) do
+    WeatherCondition.find_or_create_by!(code: "RAIN").tap do |condition|
+      condition.update!(active: true, deleted_at: nil)
+    end
+  end
   let(:ml_response) do
     {
       prediction: {

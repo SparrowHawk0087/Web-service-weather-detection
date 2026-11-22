@@ -2,7 +2,7 @@ require "rails_helper"
 
 RSpec.describe PredictionSerializer do
   let(:user) { create(:user) }
-  let(:condition) { create(:weather_condition, code: "SNOW") }
+  let(:condition) { WeatherCondition.find_or_create_by!(code: "SNOW") }
   let(:storage_key) { "#{SecureRandom.uuid}.jpg" }
   let(:prediction) do
     create(
@@ -26,18 +26,9 @@ RSpec.describe PredictionSerializer do
   end
 
   before do
-    create(
-      :weather_condition_translation,
-      weather_condition: condition,
-      locale: "ru",
-      name: "Снег"
-    )
-    create(
-      :weather_condition_translation,
-      weather_condition: condition,
-      locale: "en",
-      name: "Snow"
-    )
+    condition.update!(active: true, deleted_at: nil)
+    condition.translations.find_or_initialize_by(locale: "ru").update!(name: "Снег")
+    condition.translations.find_or_initialize_by(locale: "en").update!(name: "Snow")
   end
 
   describe "#as_json" do
