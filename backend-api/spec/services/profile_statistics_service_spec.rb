@@ -5,8 +5,12 @@ RSpec.describe ProfileStatisticsService do
   let(:other_user) { create(:user) }
 
   def condition_with_translation(code, name)
-    condition = create(:weather_condition, code: code)
-    create(:weather_condition_translation, weather_condition: condition, locale: "ru", name: name)
+    condition = WeatherCondition.find_by(code: code) || create(:weather_condition, code: code)
+    translation = WeatherConditionTranslation.find_or_initialize_by(
+      weather_condition: condition,
+      locale: "ru"
+    )
+    translation.update!(name: name)
     condition
   end
 

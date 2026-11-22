@@ -16,13 +16,21 @@ function MetricCard({ label, value, detail, accent }) {
   )
 }
 
-export default function StatisticsOverview({ summary = {}, loading = false }) {
+export default function StatisticsOverview({ summary, loading = false }) {
   if (loading) {
     return (
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {metrics.map((metric) => <div key={metric.key} className="profile-glass-card h-32 animate-pulse bg-white/[0.035]" />)}
         <div className="profile-glass-card col-span-2 h-32 animate-pulse bg-white/[0.035] xl:col-span-4" />
       </div>
+    )
+  }
+
+  if (!summary) {
+    return (
+      <section className="profile-glass-card flex min-h-36 items-center justify-center p-5 text-center text-sm text-white/45">
+        Статистика пока недоступна. Повторите загрузку, чтобы получить актуальные данные.
+      </section>
     )
   }
 

@@ -3,7 +3,7 @@ require Rails.root.join("db/migrate/20261122210000_normalize_prediction_class_pr
 
 RSpec.describe NormalizePredictionClassProbabilities do
   before do
-    %w[RAIN FOG SNOW].each do |code|
+    %w[RAIN FOG SNOW CLEAR].each do |code|
       condition = WeatherCondition.find_or_create_by!(code: code)
       condition.update!(active: true, deleted_at: nil)
     end
@@ -26,7 +26,8 @@ RSpec.describe NormalizePredictionClassProbabilities do
       "RAIN" => 0.7,
       "HAIL" => 0.2,
       "FOG" => 0.1,
-      "SNOW" => 0.0
+      "SNOW" => 0.0,
+      "CLEAR" => 0.0
     )
   end
 
@@ -42,7 +43,8 @@ RSpec.describe NormalizePredictionClassProbabilities do
     expect(prediction.reload.class_probabilities).to eq(
       "RAIN" => 0.0,
       "FOG" => 0.0,
-      "SNOW" => 0.0
+      "SNOW" => 0.0,
+      "CLEAR" => 0.0
     )
   end
 end

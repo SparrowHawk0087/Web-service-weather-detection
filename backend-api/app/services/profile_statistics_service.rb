@@ -4,8 +4,8 @@ class ProfileStatisticsService
 
   def initialize(user)
     @user = user
-    @time_zone = ActiveSupport::TimeZone[user.timezone.presence] ||
-                 ActiveSupport::TimeZone["UTC"]
+    timezone_name = user.timezone.presence || "UTC"
+    @time_zone = ActiveSupport::TimeZone[timezone_name] || ActiveSupport::TimeZone["UTC"]
   end
 
   def call

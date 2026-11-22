@@ -71,12 +71,23 @@ export default function ProfilePage() {
         if (active) setProfileLoading(false)
       })
 
-    loadStatistics().catch(() => {})
+    getProfileStatistics()
+      .then((result) => {
+        if (!active) return
+        setStatistics(result)
+        setStatisticsError('')
+      })
+      .catch((error) => {
+        if (active) setStatisticsError(error.message || 'Не удалось загрузить статистику.')
+      })
+      .finally(() => {
+        if (active) setStatisticsLoading(false)
+      })
 
     return () => {
       active = false
     }
-  }, [loadStatistics, setUser])
+  }, [setUser])
 
   async function handleProfileSave(payload) {
     setSavingProfile(true)
@@ -219,12 +230,6 @@ export default function ProfilePage() {
               saving={savingPreferences}
             />
 
-            <DangerZone
-              onClearHistory={handleClearHistory}
-              onDeleteAccount={handleDeleteAccount}
-              clearing={clearingHistory}
-              deleting={deletingAccount}
-            />
           </div>
 
           <div className="flex min-w-0 flex-col gap-4">
@@ -241,6 +246,15 @@ export default function ProfilePage() {
               loading={statisticsLoading}
             />
           </div>
+        </div>
+
+        <div className="mt-5">
+          <DangerZone
+            onClearHistory={handleClearHistory}
+            onDeleteAccount={handleDeleteAccount}
+            clearing={clearingHistory}
+            deleting={deletingAccount}
+          />
         </div>
 
         <footer className="mt-8 border-t border-white/[0.07] py-4 text-center text-[11px] text-white/30">
