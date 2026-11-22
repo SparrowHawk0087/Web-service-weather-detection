@@ -1,6 +1,6 @@
 import { Link, useNavigate } from  'react-router-dom'
 import { useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import AuthLayout from '../components/AuthLayout'
 import UserIcon from '../components/icons/UserIcon'
 import MailIcon from '../components/icons/MailIcon'
