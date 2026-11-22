@@ -14,6 +14,9 @@ class User < ApplicationRecord
   has_many :feedbacks,       dependent: :nullify
 
   validates :role, inclusion: { in: ROLES }
+  validates :name, presence: true,
+                   length: { in: 3..50 },
+                   unless: :anonymized?
   validates :email, presence: true,
                     format: { with: URI::MailTo::EMAIL_REGEXP },
                     unless: :anonymized?

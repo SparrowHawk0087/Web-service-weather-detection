@@ -31,7 +31,7 @@ class SessionsController < ApplicationController
     )
 
     render json: {
-      user:         { public_id: user.public_id, name: user.name, email: user.email, role: user.role },
+      user:         ProfileSerializer.new(user).as_json,
       api_token:    raw,
       token_id:     token.id,
       token_prefix: token.token_prefix
