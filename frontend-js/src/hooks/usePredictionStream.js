@@ -1,6 +1,6 @@
 import { createConsumer } from '@rails/actioncable'
 import { useEffect, useRef } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 import { isPredictionUpdate } from '../domain/prediction'
 
 const API_URL = import.meta.env.VITE_API_URL?.trim() || ''
