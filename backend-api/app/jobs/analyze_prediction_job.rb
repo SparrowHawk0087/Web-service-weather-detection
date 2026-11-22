@@ -24,18 +24,19 @@ class AnalyzePredictionJob < ApplicationJob
       model_id: prediction.ml_model_version.presence || "vision-v1"
     )
 
-    prediction_data = result.fetch(:prediction)
-    weather_code = prediction_data.fetch(:class).to_s.upcase
-    weather_condition = WeatherCondition.active.find_by(code: weather_code)
-    probabilities = prediction_data[:probabilities] || {}
-    confidence = Float(prediction_data.fetch(:confidence))
+    validated_result = PredictionResultContract.new(result).call
 
     prediction.complete!(
-      weather_condition: weather_condition,
-      confidence: confidence,
-      class_probabilities: probabilities,
-      ml_service_version: result[:model_used].presence || "unknown",
+      weather_condition: validated_result.fetch(:weather_condition),
+      confidence: validated_result.fetch(:confidence),
+      class_probabilities: validated_result.fetch(:probabilities),
+      ml_service_version: result[:model_used].presence || result["model_used"].presence || "unknown",
       processing_duration_ms: ((Time.current - started_at) * 1_000).round
+    )
+  rescue PredictionResultContract::InvalidResult => error
+    prediction&.fail!(
+      error_code: error.error_code,
+      error_message: error.message.truncate(1_000)
     )
   rescue MlService::WeatherPredictionClient::TransientError
     prediction&.update!(

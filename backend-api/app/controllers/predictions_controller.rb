@@ -46,7 +46,7 @@ class PredictionsController < ApplicationController
   def enqueue
     uploaded_file = params[:file]
     unless uploaded_file.respond_to?(:tempfile)
-      return render json: { error: "Файл не передан" }, status: :bad_request
+      return render_api_error("INVALID_UPLOAD", "An image file is required", status: :unprocessable_content)
     end
 
     prediction = nil
@@ -76,17 +76,30 @@ class PredictionsController < ApplicationController
 
     render json: {
       status: "accepted",
-      prediction: prediction_summary(prediction)
+      prediction: serialize_prediction(prediction)
     }, status: :accepted
+  rescue PredictionImageStorage::StorageUnavailable => error
+    cleanup_unpersisted_image(storage_key, prediction)
+    Rails.logger.error("[PredictionsController] image storage unavailable: #{error.message}")
+    render_api_error("STORAGE_UNAVAILABLE", "Image storage is temporarily unavailable", status: :service_unavailable)
   rescue PredictionImageStorage::InvalidUpload => error
-    PredictionImageStorage.delete!(storage_key) if storage_key.present? && !prediction&.persisted?
-    render json: { error: error.message }, status: :unprocessable_content
+    cleanup_unpersisted_image(storage_key, prediction)
+    render_api_error("INVALID_UPLOAD", error.message, status: :unprocessable_content)
   rescue ActiveRecord::RecordInvalid => error
-    PredictionImageStorage.delete!(storage_key) if storage_key.present? && !prediction&.persisted?
-    render json: { error: error.record.errors.full_messages }, status: :unprocessable_entity
+    cleanup_unpersisted_image(storage_key, prediction)
+    render_api_error(
+      "INVALID_UPLOAD",
+      "The uploaded prediction could not be saved",
+      details: { errors: error.record.errors.full_messages },
+      status: :unprocessable_entity
+    )
   rescue ActiveRecord::RecordNotUnique
-    PredictionImageStorage.delete!(storage_key) if storage_key.present? && !prediction&.persisted?
-    render json: { error: "Это изображение уже было отправлено на анализ" }, status: :conflict
+    cleanup_unpersisted_image(storage_key, prediction)
+    render_api_error("DUPLICATE_IMAGE", "This image has already been submitted", status: :conflict)
+  rescue StandardError => error
+    cleanup_unpersisted_image(storage_key, prediction)
+    Rails.logger.error("[PredictionsController] enqueue failed: #{error.class}: #{error.message}")
+    render_api_error("INTERNAL_ERROR", "An unexpected error occurred", status: :internal_server_error)
   end
 
   # POST /predictions
@@ -127,21 +140,33 @@ class PredictionsController < ApplicationController
 
   # GET /predictions
   def index
-    predictions = current_user.predictions
-                              .where(deleted_at: nil)
-                              .recent
-                              .limit(10)
-                              .includes(:weather_condition)
+    page = positive_integer_param(:page, default: 1)
+    per_page = [positive_integer_param(:per_page, default: 20), 100].min
+    scope = current_user.predictions
+                        .where(deleted_at: nil)
+                        .recent
+                        .includes(weather_condition: :translations)
+    total_count = scope.count
+    predictions = scope.offset((page - 1) * per_page).limit(per_page)
 
     render json: {
-      predictions: predictions.map { |prediction| prediction_summary(prediction) }
+      predictions: predictions.map { |prediction| serialize_prediction(prediction) },
+      pagination: {
+        page: page,
+        per_page: per_page,
+        total_count: total_count,
+        total_pages: (total_count.to_f / per_page).ceil
+      }
     }
   end
 
   # GET /predictions/:id
   def show
-    prediction = current_user.predictions.where(deleted_at: nil).find(params[:id])
-    render json: { prediction: prediction_summary(prediction) }
+    prediction = current_user.predictions
+                             .where(deleted_at: nil)
+                             .includes(weather_condition: :translations)
+                             .find(params[:id])
+    render json: { prediction: serialize_prediction(prediction) }
   end
 
   # PATCH/PUT /predictions/:id
@@ -164,28 +189,26 @@ class PredictionsController < ApplicationController
 
   private
 
-  def prediction_summary(prediction)
-    top_probability_class = prediction.class_probabilities&.max_by { |_key, value| value }&.first
-    condition = prediction.weather_condition
-    locale = current_user.locale || "ru"
+  def serialize_prediction(prediction)
+    PredictionSerializer.new(
+      prediction,
+      locale: current_user.locale.presence || "ru"
+    ).as_json
+  end
 
-    {
-      id: prediction.id,
-      public_id: prediction.public_id,
-      name: prediction.name,
-      status: prediction.status,
-      weather_condition: condition&.translated(locale)&.name || condition&.code || top_probability_class,
-      weather_code: condition&.code || top_probability_class,
-      confidence: prediction.confidence,
-      probabilities: prediction.class_probabilities,
-      ml_model_version: prediction.ml_model_version,
-      original_filename: prediction.original_filename,
-      processing_duration_ms: prediction.processing_duration_ms,
-      error_code: prediction.error_code,
-      created_at: prediction.created_at,
-      finished_at: prediction.finished_at,
-      updated_at: prediction.updated_at
-    }
+  def positive_integer_param(name, default:)
+    value = Integer(params[name].to_s, 10)
+    value.positive? ? value : default
+  rescue ArgumentError, TypeError
+    default
+  end
+
+  def cleanup_unpersisted_image(storage_key, prediction)
+    return if storage_key.blank? || prediction&.persisted?
+
+    PredictionImageStorage.delete!(storage_key)
+  rescue PredictionImageStorage::MissingImage
+    nil
   end
 
   # Existing synchronous ML request helper.

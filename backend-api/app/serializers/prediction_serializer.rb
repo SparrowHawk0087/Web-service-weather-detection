@@ -73,7 +73,9 @@ class PredictionSerializer
   end
 
   def image_url
-    return nil if prediction.storage_key.blank? || prediction.image_deleted_at.present?
+    storage_key = prediction.storage_key.to_s
+    return nil if prediction.image_deleted_at.present?
+    return nil unless storage_key.match?(/\A[0-9a-f-]{36}\.(jpg|jpeg|png|webp|zip)\z/i)
 
     "/predictions/#{prediction.id}/image"
   end
