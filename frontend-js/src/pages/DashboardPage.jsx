@@ -9,53 +9,16 @@ import {
   deletePrediction,
   renamePrediction,
   getPredictions,
-} from '../api/auth'
+} from '../api/predictions'
+import {
+  isIncomingPredictionNewer,
+  isPredictionRecord,
+  mergePredictionHistory,
+  upsertPrediction,
+} from '../domain/prediction'
 import { usePredictionStream } from '../hooks/usePredictionStream'
 
-const STATUS_RANK = {
-  pending: 0,
-  processing: 1,
-  completed: 2,
-  failed: 2,
-  cancelled: 2,
-}
-
-function isIncomingNewer(existing, incoming) {
-  if (existing.updated_at && incoming.updated_at) {
-    return Date.parse(incoming.updated_at) >= Date.parse(existing.updated_at)
-  }
-
-  return (STATUS_RANK[incoming.status] ?? -1) >= (STATUS_RANK[existing.status] ?? -1)
-}
-
-function mergePrediction(history, incoming) {
-  const index = history.findIndex((item) => item.id === incoming.id)
-  if (index === -1) return [incoming, ...history].slice(0, 10)
-
-  const existing = history[index]
-  const updated = isIncomingNewer(existing, incoming)
-    ? { ...existing, ...incoming }
-    : existing
-
-  return history.map((item) => item.id === incoming.id ? updated : item)
-}
-
-function mergeHistory(current, incomingItems) {
-  const merged = incomingItems.map((incoming) => {
-    const existing = current.find((item) => item.id === incoming.id)
-    if (!existing) return incoming
-
-    return isIncomingNewer(existing, incoming)
-      ? { ...existing, ...incoming }
-      : existing
-  })
-
-  const missing = current.filter(
-    (item) => !incomingItems.some((incoming) => incoming.id === item.id),
-  )
-
-  return [...merged, ...missing].slice(0, 10)
-}
+const HISTORY_PAGE_SIZE = 20
 
 export default function DashboardPage() {
   const [file, setFile] = useState(null)
@@ -70,43 +33,30 @@ export default function DashboardPage() {
 
   const loadHistory = useCallback(async () => {
     try {
-      const response = await getPredictions()
-      setHistory((current) => mergeHistory(current, response.predictions || []))
-    } catch (err) {
-      console.error('Failed to load history:', err)
+      const response = await getPredictions({ page: 1, perPage: HISTORY_PAGE_SIZE })
+      setHistory((current) => mergePredictionHistory(current, response.predictions || []))
+    } catch (error) {
+      console.error('Failed to load prediction history:', error)
     }
   }, [])
 
   const handlePredictionUpdate = useCallback((updatedPrediction) => {
-    setHistory((current) => mergePrediction(current, updatedPrediction))
-    setSelectedHistoryItem((current) => (
-      current?.id === updatedPrediction.id && isIncomingNewer(current, updatedPrediction)
-        ? { ...current, ...updatedPrediction }
-        : current
-    ))
+    if (!isPredictionRecord(updatedPrediction)) return
+
+    setHistory((current) => upsertPrediction(current, updatedPrediction, HISTORY_PAGE_SIZE))
+    setSelectedHistoryItem((current) => {
+      if (current?.id !== updatedPrediction.id) return current
+      return isIncomingPredictionNewer(current, updatedPrediction) ? updatedPrediction : current
+    })
   }, [])
 
   usePredictionStream(handlePredictionUpdate, loadHistory)
 
-  // Fetch the initial snapshot after the Dashboard mounts. Merging rather than
-  // replacing keeps any newer WebSocket event received while the request ran.
+  // Load one REST snapshot on mount. A snapshot is merged by id and timestamp,
+  // so a newer ActionCable event cannot be overwritten by an older HTTP response.
   useEffect(() => {
-    let active = true
-
-    getPredictions()
-      .then((response) => {
-        if (active) {
-          setHistory((current) => mergeHistory(current, response.predictions || []))
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to load history:', err)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [])
+    loadHistory()
+  }, [loadHistory])
 
   const activePrediction = activePredictionId === null
     ? null
@@ -121,7 +71,7 @@ export default function DashboardPage() {
 
   const processingError = activePrediction?.status === 'failed'
     ? activePrediction.error_code
-      ? 'Не удалось выполнить анализ (' + activePrediction.error_code + ').'
+      ? `Не удалось выполнить анализ (${activePrediction.error_code}).`
       : 'Не удалось выполнить анализ изображения.'
     : null
 
@@ -143,25 +93,29 @@ export default function DashboardPage() {
 
     try {
       const response = await enqueuePrediction(file, modelId, file.name)
-      const queuedPrediction = response.prediction
+      const queuedPrediction = response?.prediction
+
+      if (!isPredictionRecord(queuedPrediction)) {
+        throw new Error('Сервер вернул Prediction в неизвестном формате')
+      }
 
       setActivePredictionId(queuedPrediction.id)
-      setHistory((current) => mergePrediction(current, queuedPrediction))
+      setHistory((current) => upsertPrediction(current, queuedPrediction, HISTORY_PAGE_SIZE))
       setIsSubmitting(false)
 
-      // A final event can arrive before the browser receives the HTTP 202.
-      // Refreshing the record closes that small delivery race.
+      // Refresh after HTTP 202 to close the race where the final WS event arrives
+      // before the browser receives the acceptance response.
       try {
         const latest = await getPrediction(queuedPrediction.id)
-        setHistory((current) => mergePrediction(current, latest.prediction))
+        if (isPredictionRecord(latest)) {
+          setHistory((current) => upsertPrediction(current, latest, HISTORY_PAGE_SIZE))
+        }
       } catch (snapshotError) {
-        console.warn('Could not refresh the queued prediction:', snapshotError)
+        console.warn('Could not refresh the accepted prediction:', snapshotError)
       }
-    } catch (err) {
-      console.error('Prediction enqueue error:', err)
-      setRequestError(
-        err.response?.data?.error || 'Не удалось отправить изображение на анализ',
-      )
+    } catch (requestError) {
+      console.error('Prediction enqueue error:', requestError)
+      setRequestError(requestError.message || 'Не удалось отправить изображение на анализ')
       setIsSubmitting(false)
     }
   }
@@ -169,23 +123,30 @@ export default function DashboardPage() {
   const handleDeletePrediction = async (id) => {
     try {
       await deletePrediction(id)
-      setHistory((prev) => prev.filter((p) => p.id !== id))
+      setHistory((current) => current.filter((item) => item.id !== id))
       if (selectedHistoryItem?.id === id) setSelectedHistoryItem(null)
       if (activePredictionId === id) setActivePredictionId(null)
-    } catch (err) {
-      console.error('Delete error:', err)
+    } catch (error) {
+      setRequestError(error.message || 'Не удалось удалить анализ')
     }
   }
 
   const handleRenamePrediction = async (id, name) => {
     try {
       await renamePrediction(id, name)
-      setHistory((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)))
-      if (selectedHistoryItem?.id === id) {
-        setSelectedHistoryItem((prev) => ({ ...prev, name }))
+      // PATCH intentionally remains a lightweight legacy response. Re-fetch the
+      // canonical object instead of constructing a Prediction in React.
+      const refreshedPrediction = await getPrediction(id)
+      if (!isPredictionRecord(refreshedPrediction)) {
+        throw new Error('Сервер вернул Prediction в неизвестном формате')
       }
-    } catch (err) {
-      console.error('Rename error:', err)
+
+      setHistory((current) => upsertPrediction(current, refreshedPrediction, HISTORY_PAGE_SIZE))
+      setSelectedHistoryItem((current) => (
+        current?.id === id ? refreshedPrediction : current
+      ))
+    } catch (error) {
+      setRequestError(error.message || 'Не удалось переименовать анализ')
     }
   }
 
