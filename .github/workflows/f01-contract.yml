@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -33,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run domain and API tests
+      - name: Run Vitest and Node contract tests
         run: npm test
 
       - name: Run ESLint
@@ -104,7 +105,7 @@ jobs:
         run: bundle exec rspec
 
   docker:
-    name: Docker Compose build
+    name: Docker Compose build and smoke test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -115,3 +116,48 @@ jobs:
 
       - name: Build application services
         run: docker compose build backend-api sidekiq dispatch-recovery db-setup frontend ml-service
+
+      - name: Start and smoke-test the complete stack
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cleanup() {
+            docker compose down --volumes --remove-orphans
+          }
+          trap cleanup EXIT
+
+          docker compose up -d
+
+          ready=false
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:5173/ >/dev/null \
+              && curl --fail --silent http://localhost:8000/health >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 5
+          done
+
+          if [[ "$ready" != "true" ]]; then
+            docker compose ps
+            docker compose logs --no-color
+            echo "Frontend or ML service did not become ready"
+            exit 1
+          fi
+
+          backend_status="$(curl --silent --show-error --output /tmp/backend-response.json \
+            --write-out '%{http_code}' http://localhost:3000/predictions)"
+
+          if [[ "$backend_status" != "401" ]]; then
+            docker compose ps
+            docker compose logs --no-color backend-api db-setup
+            echo "Expected unauthenticated API request to return 401, got $backend_status"
+            cat /tmp/backend-response.json
+            exit 1
+          fi
+
+          grep --quiet '"UNAUTHORIZED"' /tmp/backend-response.json
+          docker compose exec --no-TTY redis redis-cli ping | grep --quiet '^PONG$'
+          docker compose exec --no-TTY db pg_isready -U weather
+          docker compose ps
