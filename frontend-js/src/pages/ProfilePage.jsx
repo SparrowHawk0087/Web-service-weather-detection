@@ -12,7 +12,6 @@ import {
 import ProfileHeader from '../components/profile/ProfileHeader.jsx'
 import ProfileCard from '../components/profile/ProfileCard.jsx'
 import SecurityCard from '../components/profile/SecurityCard.jsx'
-import PreferencesCard from '../components/profile/PreferencesCard.jsx'
 import DangerZone from '../components/profile/DangerZone.jsx'
 import StatisticsOverview from '../components/profile/StatisticsOverview.jsx'
 import WeatherDistribution from '../components/profile/WeatherDistribution.jsx'
@@ -176,66 +175,62 @@ export default function ProfilePage() {
   const settings = profile?.settings || {}
 
   return (
-    <main className="min-h-screen px-4 py-6 text-white sm:px-6 lg:px-8 lg:py-9">
-      <div className="mx-auto max-w-[1440px]">
-        <ProfileHeader user={profile} onLogout={handleLogout} />
+    <main className="profile-page">
+      <div className="profile-container">
+        <ProfileHeader onLogout={handleLogout} />
 
         {notice && (
           <div
             role="status"
             aria-live="polite"
-            className={`mb-5 rounded-2xl border px-4 py-3 text-sm backdrop-blur-xl ${notice.type === 'error' ? 'border-rose-300/20 bg-rose-500/10 text-rose-100' : 'border-emerald-300/20 bg-emerald-500/10 text-emerald-100'}`}
+            className={`profile-notice ${notice.type === 'error' ? 'is-error' : 'is-success'}`}
           >
-            <div className="flex items-start justify-between gap-3">
-              <span>{notice.text}</span>
-              <button type="button" onClick={() => setNotice(null)} className="shrink-0 text-current/60 hover:text-current" aria-label="Закрыть уведомление">×</button>
-            </div>
+            <span>{notice.text}</span>
+            <button type="button" onClick={() => setNotice(null)} aria-label="Закрыть уведомление">×</button>
           </div>
         )}
 
         {profileError && (
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-300/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          <div className="profile-inline-alert is-error">
             <span>{profileError}</span>
             <button type="button" onClick={() => {
               setProfileLoading(true)
               getProfile().then((data) => { setUser(data); setProfileError('') }).catch((error) => setProfileError(error.message)).finally(() => setProfileLoading(false))
-            }} className="rounded-full border border-rose-200/20 px-3 py-1.5 text-xs hover:bg-rose-400/10">
+            }}>
               Повторить
             </button>
           </div>
         )}
 
         {statisticsError && (
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200/15 bg-amber-400/[0.07] px-4 py-3 text-sm text-amber-100">
+          <div className="profile-inline-alert is-warning">
             <span>{statisticsError}</span>
-            <button type="button" onClick={retryStatistics} className="rounded-full border border-amber-100/20 px-3 py-1.5 text-xs hover:bg-amber-300/10">
-              Обновить статистику
-            </button>
+            <button type="button" onClick={retryStatistics}>Обновить статистику</button>
           </div>
         )}
 
-        <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <div className="flex min-w-0 flex-col gap-4">
+        <div className="profile-layout">
+          <div className="profile-sidebar-column">
             {profileLoading && !profile ? (
-              <div className="profile-glass-card h-[390px] animate-pulse bg-white/[0.035]" />
+              <div className="profile-glass-card profile-account-card profile-account-skeleton" />
             ) : (
-              <ProfileCard user={profile} onSave={handleProfileSave} saving={savingProfile} />
+              <ProfileCard
+                user={profile}
+                onSave={handleProfileSave}
+                saving={savingProfile}
+                animationsEnabled={settings.animations_enabled !== false}
+                onPreferenceChange={handlePreferenceChange}
+                savingPreferences={savingPreferences}
+              />
             )}
 
             <SecurityCard onUpdatePassword={handlePasswordUpdate} saving={savingPassword} />
-
-            <PreferencesCard
-              enabled={settings.animations_enabled !== false}
-              onChange={handlePreferenceChange}
-              saving={savingPreferences}
-            />
-
           </div>
 
-          <div className="flex min-w-0 flex-col gap-4">
+          <div className="profile-analytics-column">
             <StatisticsOverview summary={statistics?.summary} loading={statisticsLoading} />
 
-            <div className="grid min-w-0 grid-cols-1 gap-4 2xl:grid-cols-2">
+            <div className="profile-chart-grid">
               <WeatherDistribution data={statistics?.class_distribution || []} loading={statisticsLoading} />
               <ActivityHeatmap data={statistics?.activity || []} loading={statisticsLoading} />
             </div>
@@ -248,7 +243,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="mt-5">
+        <div className="profile-danger-wrap">
           <DangerZone
             onClearHistory={handleClearHistory}
             onDeleteAccount={handleDeleteAccount}
@@ -257,7 +252,7 @@ export default function ProfilePage() {
           />
         </div>
 
-        <footer className="mt-8 border-t border-white/[0.07] py-4 text-center text-[11px] text-white/30">
+        <footer className="profile-footer">
           FSR-WEATHER · Персональные данные и аналитика принадлежат только вашему аккаунту
         </footer>
       </div>

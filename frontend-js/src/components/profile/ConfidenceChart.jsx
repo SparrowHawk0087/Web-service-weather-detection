@@ -20,10 +20,10 @@ function ConfidenceTooltip({ active, payload }) {
   if (!point || point.avg_confidence == null) return null
 
   return (
-    <div className="rounded-xl border border-white/10 bg-slate-900/95 px-3 py-2 text-xs shadow-xl">
-      <p className="text-white/50">{formatDate(point.date)}</p>
-      <p className="mt-1 font-semibold text-white">{(point.avg_confidence * 100).toFixed(1)}% уверенности</p>
-      <p className="mt-1 text-white/45">Анализов: {point.sample_count}</p>
+    <div className="profile-chart-tooltip">
+      <p className="profile-chart-tooltip-date">{formatDate(point.date)}</p>
+      <p className="profile-chart-tooltip-value">{(point.avg_confidence * 100).toFixed(1)}% уверенности</p>
+      <p className="profile-chart-tooltip-detail">Анализов: {point.sample_count}</p>
     </div>
   )
 }
@@ -41,27 +41,27 @@ export default function ConfidenceChart({ activity = [], trend = [], loading = f
     })
   }, [activity, trend])
 
-  if (loading) return <section className="profile-glass-card h-[310px] animate-pulse bg-white/[0.035]" />
+  if (loading) return <section className="profile-glass-card profile-chart-card h-[310px] animate-pulse bg-white/[0.035]" />
 
   const hasResults = trend.some((point) => point.avg_confidence != null)
 
   return (
-    <section className="profile-glass-card min-w-0 p-5 sm:p-6">
-      <div className="mb-4">
-        <p className="profile-eyebrow">Model output</p>
-        <h2 className="mt-1 text-lg font-semibold text-white">Динамика уверенности</h2>
-        <p className="mt-1 text-xs text-white/40">Среднее confidence завершённых анализов за день · 84 дня</p>
+    <section className="profile-glass-card profile-chart-card">
+      <div className="profile-section-head">
+        <p className="profile-kicker">Модель</p>
+        <h2 className="profile-section-title">Уверенность по времени</h2>
+        <p className="profile-section-description">Среднее confidence завершённых анализов за день · 84 дня</p>
       </div>
 
       {hasResults ? (
         <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 2, left: -18 }}>
-              <CartesianGrid stroke="rgba(255,255,255,.08)" vertical={false} strokeDasharray="3 5" />
+              <CartesianGrid stroke="var(--profile-grid-line)" vertical={false} strokeDasharray="3 5" />
               <XAxis
                 dataKey="date"
                 tickFormatter={(value) => value.slice(5)}
-                tick={{ fill: 'rgba(255,255,255,.35)', fontSize: 10 }}
+                tick={{ fill: 'var(--profile-muted)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
                 axisLine={false}
                 tickLine={false}
                 minTickGap={24}
@@ -69,7 +69,7 @@ export default function ConfidenceChart({ activity = [], trend = [], loading = f
               <YAxis
                 domain={[0, 1]}
                 tickFormatter={(value) => `${Math.round(value * 100)}%`}
-                tick={{ fill: 'rgba(255,255,255,.35)', fontSize: 10 }}
+                tick={{ fill: 'var(--profile-muted)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
                 axisLine={false}
                 tickLine={false}
                 width={42}
@@ -78,10 +78,10 @@ export default function ConfidenceChart({ activity = [], trend = [], loading = f
               <Line
                 type="monotone"
                 dataKey="avg_confidence"
-                stroke="#c4b5fd"
+                stroke="var(--profile-accent)"
                 strokeWidth={2.5}
-                dot={{ r: 2.5, fill: '#e9d5ff', strokeWidth: 0 }}
-                activeDot={{ r: 5, fill: '#fff', stroke: '#a78bfa', strokeWidth: 2 }}
+                dot={{ r: 2.5, fill: 'var(--profile-accent)', strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: 'var(--profile-text)', stroke: 'var(--profile-accent)', strokeWidth: 2 }}
                 connectNulls={false}
                 isAnimationActive={false}
               />
@@ -89,7 +89,7 @@ export default function ConfidenceChart({ activity = [], trend = [], loading = f
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="flex h-56 items-center justify-center rounded-2xl border border-dashed border-white/10 px-5 text-center text-sm text-white/40">
+        <div className="profile-chart-empty profile-confidence-empty">
           Недостаточно завершённых анализов для построения графика
         </div>
       )}

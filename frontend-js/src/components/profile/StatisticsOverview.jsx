@@ -7,11 +7,11 @@ const metrics = [
 
 function MetricCard({ label, value, detail, accent }) {
   return (
-    <article className="profile-glass-card min-w-0 p-4 sm:p-5">
-      <div className={`mb-4 h-1 w-10 rounded-full ${accent}`} />
-      <p className="text-xs font-medium text-white/50">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-white tabular-nums sm:text-3xl">{value}</p>
-      <p className="mt-1 text-[11px] text-white/35">{detail}</p>
+    <article className="profile-glass-card profile-metric-card">
+      <div className={`profile-metric-accent ${accent}`} />
+      <p className="profile-metric-label">{label}</p>
+      <p className="profile-metric-value">{value}</p>
+      <p className="profile-metric-detail">{detail}</p>
     </article>
   )
 }
@@ -28,7 +28,7 @@ export default function StatisticsOverview({ summary, loading = false }) {
 
   if (!summary) {
     return (
-      <section className="profile-glass-card flex min-h-36 items-center justify-center p-5 text-center text-sm text-white/45">
+      <section className="profile-glass-card profile-empty-state">
         Статистика пока недоступна. Повторите загрузку, чтобы получить актуальные данные.
       </section>
     )
@@ -40,12 +40,12 @@ export default function StatisticsOverview({ summary, loading = false }) {
 
   return (
     <section aria-label="Сводная статистика">
-      <div className="mb-3 flex items-end justify-between gap-3">
+      <div className="profile-section-head profile-overview-head">
         <div>
-          <p className="profile-eyebrow">Overview</p>
-          <h2 className="mt-1 text-lg font-semibold text-white">Ваша активность</h2>
+          <p className="profile-kicker">Bento analytics</p>
+          <h2 className="profile-section-title">Обзор активности</h2>
         </div>
-        <span className="text-[11px] text-white/35">Реальные данные PostgreSQL</span>
+        <span className="profile-section-description">Данные из вашей истории анализов</span>
       </div>
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -55,15 +55,15 @@ export default function StatisticsOverview({ summary, loading = false }) {
             label={metric.label}
             value={summary[metric.key] ?? 0}
             detail={metric.detail}
-            accent={['bg-violet-400', 'bg-emerald-400', 'bg-sky-400', 'bg-rose-400'][index]}
+            accent={['profile-accent-purple', 'profile-accent-green', 'profile-accent-blue', 'profile-accent-red'][index]}
           />
         ))}
-        <article className="profile-glass-card col-span-2 flex items-center justify-between gap-4 p-4 sm:p-5 xl:col-span-4">
+        <article className="profile-glass-card profile-confidence-summary">
           <div>
-            <p className="text-xs font-medium text-white/50">Средняя уверенность</p>
-            <p className="mt-1 text-[11px] text-white/35">Среднее confidence завершённых анализов, не точность модели</p>
+            <p className="profile-metric-label">Средняя уверенность</p>
+            <p className="profile-metric-detail">Среднее confidence завершённых анализов, не точность модели</p>
           </div>
-          <p className="shrink-0 text-2xl font-semibold tabular-nums text-white sm:text-3xl">{average}</p>
+          <p className="profile-metric-value">{average}</p>
         </article>
       </div>
     </section>

@@ -82,28 +82,43 @@ describe('ProfilePage', () => {
     logout.mockResolvedValue(undefined)
   })
 
-  it('loads real profile metrics and the weather class distribution', async () => {
+  it('loads profile metrics and the reference-style class distribution', async () => {
     renderPage()
 
-    expect(await screen.findByText('Ваша активность')).toBeTruthy()
+    expect(await screen.findByText('Обзор активности')).toBeTruthy()
     expect(screen.getByText('12')).toBeTruthy()
     expect(screen.getByText('87.0%')).toBeTruthy()
     expect(screen.getByText('Туман')).toBeTruthy()
     expect(screen.getByText('Ясно')).toBeTruthy()
-    expect(screen.getByText('Активность · 12 недель')).toBeTruthy()
+    expect(screen.getByText('12 недель')).toBeTruthy()
   })
 
   it('saves account details and synchronizes AuthContext', async () => {
     renderPage()
 
-    const nameInput = await screen.findByLabelText('Имя / псевдоним')
+    const nameInput = await screen.findByLabelText('Псевдоним')
     fireEvent.change(nameInput, { target: { value: 'Kirill New' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Сохранить изменения' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     await waitFor(() => {
       expect(profileApi.updateProfile).toHaveBeenCalledWith({ name: 'Kirill New' })
       expect(setUser).toHaveBeenCalledWith(expect.objectContaining({ name: 'Kirill New' }))
     })
+  })
+
+  it('keeps the animation toggle fully inside its full-width settings row', async () => {
+    renderPage()
+
+    const toggle = await screen.findByRole('switch', { name: 'Анимации интерфейса' })
+    const track = toggle.querySelector('.profile-switch-track')
+    const thumb = track?.querySelector('.profile-switch-thumb')
+
+    expect(toggle.className).toContain('profile-switch')
+    expect(track).toBeTruthy()
+    expect(thumb).toBeTruthy()
+    expect(toggle.contains(track)).toBe(true)
+    expect(track.contains(thumb)).toBe(true)
+    expect(toggle.getAttribute('aria-checked')).toBe('true')
   })
 
   it('persists animation preferences only after the API succeeds', async () => {
