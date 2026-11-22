@@ -1,4 +1,5 @@
 require "rails_helper"
+require Rails.root.join("db/migrate/20261122210000_normalize_prediction_class_probabilities")
 
 RSpec.describe NormalizePredictionClassProbabilities do
   before do
