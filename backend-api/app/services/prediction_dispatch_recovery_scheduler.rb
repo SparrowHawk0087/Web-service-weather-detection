@@ -9,6 +9,7 @@ class PredictionDispatchRecoveryScheduler
     loop do
       begin
         RecoverPredictionDispatchesJob.perform_now
+        RecoverPredictionMediaCleanupJob.perform_now
       rescue StandardError => error
         Rails.logger.error(
           "[PredictionDispatchRecoveryScheduler] #{error.class}: #{error.message}"

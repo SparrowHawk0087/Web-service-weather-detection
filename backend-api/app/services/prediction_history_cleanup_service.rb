@@ -1,6 +1,4 @@
 class PredictionHistoryCleanupService
-  class CleanupEnqueueFailed < StandardError; end
-
   def initialize(user)
     @user = user
   end
@@ -29,7 +27,7 @@ class PredictionHistoryCleanupService
       end
     end
 
-    enqueue_pending_media_cleanup
+    schedule_media_cleanup
     { deleted_count: deleted_count }
   end
 
@@ -37,18 +35,14 @@ class PredictionHistoryCleanupService
 
   attr_reader :user
 
-  def enqueue_pending_media_cleanup
-    pending_ids = user.predictions
-                      .where.not(deleted_at: nil)
-                      .where("storage_key IS NOT NULL OR heatmap_storage_key IS NOT NULL")
-                      .ids
-    return if pending_ids.empty?
-
-    DeletePredictionMediaJob.perform_later(pending_ids)
+  def schedule_media_cleanup
+    PredictionMediaCleanupDispatchService.call(user.predictions.where.not(deleted_at: nil).ids)
   rescue StandardError => error
+    # The requested_at lease remains unset when enqueue fails. The dedicated
+    # recovery process will discover these rows and retry when Redis recovers.
     Rails.logger.error(
-      "[PredictionHistoryCleanupService] could not enqueue media cleanup "       "user_id=#{user.id} #{error.class}: #{error.message}"
+      "[PredictionHistoryCleanupService] media cleanup enqueue failed " \
+      "user_id=#{user.id} #{error.class}: #{error.message}"
     )
-    raise CleanupEnqueueFailed, "Prediction media cleanup could not be scheduled"
   end
 end

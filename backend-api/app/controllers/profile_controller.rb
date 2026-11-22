@@ -161,12 +161,6 @@ class ProfileController < ApplicationController
 
     AccountDeletionService.new(current_user).call
     head :no_content
-  rescue AccountDeletionService::CleanupEnqueueFailed
-    render_api_error(
-      "MEDIA_CLEANUP_UNAVAILABLE",
-      "The account was anonymized, but media cleanup could not be scheduled",
-      status: :service_unavailable
-    )
   end
 
   private

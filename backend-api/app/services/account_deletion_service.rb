@@ -1,13 +1,11 @@
 class AccountDeletionService
-  class CleanupEnqueueFailed < StandardError; end
-
   def initialize(user)
     @user = user
   end
 
   def call
     user.anonymize!
-    enqueue_pending_media_cleanup
+    schedule_media_cleanup
     true
   end
 
@@ -15,18 +13,14 @@ class AccountDeletionService
 
   attr_reader :user
 
-  def enqueue_pending_media_cleanup
-    pending_ids = user.predictions
-                      .where.not(deleted_at: nil)
-                      .where("storage_key IS NOT NULL OR heatmap_storage_key IS NOT NULL")
-                      .ids
-    return if pending_ids.empty?
-
-    DeletePredictionMediaJob.perform_later(pending_ids)
+  def schedule_media_cleanup
+    PredictionMediaCleanupDispatchService.call(user.predictions.where.not(deleted_at: nil).ids)
   rescue StandardError => error
+    # Account deletion is complete. Persisted media keys are a durable cleanup
+    # request and will be picked up by the dispatch-recovery scheduler.
     Rails.logger.error(
-      "[AccountDeletionService] could not enqueue media cleanup "       "user_id=#{user.id} #{error.class}: #{error.message}"
+      "[AccountDeletionService] media cleanup enqueue failed " \
+      "user_id=#{user.id} #{error.class}: #{error.message}"
     )
-    raise CleanupEnqueueFailed, "Prediction media cleanup could not be scheduled"
   end
 end
