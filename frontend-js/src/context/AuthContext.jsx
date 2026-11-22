@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import * as authApi from '../api/auth.js'
 import AuthContext from './auth-context.js'
 
@@ -52,6 +52,32 @@ export function AuthProvider({ children }) {
     }
   }, [token])
 
+  useEffect(() => {
+    const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)') || { matches: false }
+    const applyMotionPreference = () => {
+      const animationsEnabled = user?.settings?.animations_enabled !== false
+      document.documentElement.dataset.motion = (
+        animationsEnabled && !motionQuery.matches
+      ) ? 'full' : 'reduced'
+    }
+
+    applyMotionPreference()
+    motionQuery.addEventListener?.('change', applyMotionPreference)
+
+    return () => {
+      motionQuery.removeEventListener?.('change', applyMotionPreference)
+    }
+  }, [user?.settings?.animations_enabled])
+
+  const syncUser = useCallback((nextUser) => {
+    setUser(nextUser)
+    if (nextUser) {
+      localStorage.setItem('user', JSON.stringify(nextUser))
+    } else {
+      localStorage.removeItem('user')
+    }
+  }, [])
+
   const login = async (email, password) => {
     const data = await authApi.login(email, password)
     localStorage.setItem('token', data.api_token)
@@ -94,7 +120,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
-    setUser,
+    setUser: syncUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
