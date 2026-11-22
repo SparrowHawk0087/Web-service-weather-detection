@@ -37,11 +37,10 @@ export default function ProfilePage() {
   const [notice, setNotice] = useState(null)
 
   const loadStatistics = useCallback(async () => {
-    setStatisticsLoading(true)
-    setStatisticsError('')
     try {
       const result = await getProfileStatistics()
       setStatistics(result)
+      setStatisticsError('')
       return result
     } catch (error) {
       setStatisticsError(error.message || 'Не удалось загрузить статистику.')
@@ -50,6 +49,11 @@ export default function ProfilePage() {
       setStatisticsLoading(false)
     }
   }, [])
+
+  function retryStatistics() {
+    setStatisticsLoading(true)
+    loadStatistics().catch(() => {})
+  }
 
   useEffect(() => {
     let active = true
@@ -193,7 +197,7 @@ export default function ProfilePage() {
         {statisticsError && (
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200/15 bg-amber-400/[0.07] px-4 py-3 text-sm text-amber-100">
             <span>{statisticsError}</span>
-            <button type="button" onClick={() => loadStatistics().catch(() => {})} className="rounded-full border border-amber-100/20 px-3 py-1.5 text-xs hover:bg-amber-300/10">
+            <button type="button" onClick={retryStatistics} className="rounded-full border border-amber-100/20 px-3 py-1.5 text-xs hover:bg-amber-300/10">
               Обновить статистику
             </button>
           </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 const inputClass = 'w-full rounded-xl border border-white/10 bg-slate-950/35 px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-white/30 hover:border-white/20 focus:border-violet-400/70 focus:ring-2 focus:ring-violet-400/15'
 
@@ -6,12 +6,6 @@ export default function ProfileCard({ user, onSave, saving = false }) {
   const [form, setForm] = useState({ name: user?.name || '', email: user?.email || '', currentPassword: '' })
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
-
-  useEffect(() => {
-    setForm({ name: user?.name || '', email: user?.email || '', currentPassword: '' })
-    setError('')
-    setFieldErrors({})
-  }, [user?.name, user?.email])
 
   const emailChanged = form.email.trim().toLowerCase() !== (user?.email || '').toLowerCase()
   const dirty = form.name.trim() !== (user?.name || '') || emailChanged

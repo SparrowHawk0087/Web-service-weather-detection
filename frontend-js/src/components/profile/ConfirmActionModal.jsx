@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export default function ConfirmActionModal({
   open,
@@ -14,14 +14,6 @@ export default function ConfirmActionModal({
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (open) {
-      setPassword('')
-      setConfirmation('')
-      setError('')
-    }
-  }, [open])
 
   if (!open) return null
 

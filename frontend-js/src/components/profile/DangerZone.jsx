@@ -37,7 +37,7 @@ export default function DangerZone({ onClearHistory, onDeleteAccount, clearing =
         </div>
       </section>
 
-      <ConfirmActionModal
+      {clearOpen && <ConfirmActionModal
         open={clearOpen}
         title="Очистить историю анализов?"
         description="История анализов будет скрыта без возможности восстановления. Операция затронет только записи вашего аккаунта. Связанные изображения будут удалены в фоновом режиме."
@@ -45,9 +45,9 @@ export default function DangerZone({ onClearHistory, onDeleteAccount, clearing =
         saving={clearing}
         onCancel={() => setClearOpen(false)}
         onConfirm={onClearHistory}
-      />
+      />}
 
-      <ConfirmActionModal
+      {deleteOpen && <ConfirmActionModal
         open={deleteOpen}
         title="Удалить аккаунт без возможности восстановления?"
         description="Ваш профиль будет анонимизирован, все сессии отозваны, история скрыта, связанные медиафайлы поставлены в очередь на удаление. Для подтверждения введите текущий пароль и слово DELETE."
@@ -57,7 +57,7 @@ export default function DangerZone({ onClearHistory, onDeleteAccount, clearing =
         saving={deleting}
         onCancel={() => setDeleteOpen(false)}
         onConfirm={onDeleteAccount}
-      />
+      />}
     </>
   )
 }

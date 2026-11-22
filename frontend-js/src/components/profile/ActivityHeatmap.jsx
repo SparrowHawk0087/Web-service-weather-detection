@@ -60,7 +60,7 @@ export default function ActivityHeatmap({ data = [], loading = false }) {
             <span>{data[0] ? formatDate(data[0].date) : ''}</span>
             <div className="flex items-center gap-1.5">
               <span>Меньше</span>
-              {levels.map((level, index) => <span key={level} className={`h-2.5 w-2.5 rounded-[3px] border ${level}`} aria-hidden="true" />)}
+              {levels.map((level) => <span key={level} className={`h-2.5 w-2.5 rounded-[3px] border ${level}`} aria-hidden="true" />)}
               <span>Больше</span>
             </div>
             <span>{data.at(-1) ? formatDate(data.at(-1).date) : ''}</span>
