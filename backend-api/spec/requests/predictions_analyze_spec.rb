@@ -50,8 +50,8 @@ RSpec.describe "Predictions analyze", type: :request do
   it "возвращает 400 без файла" do
     post "/predictions/analyze", params: {}, headers: headers
 
-    expect(response).to have_http_status(:bad_request)
-    expect(response.parsed_body["error"]).to eq("Файл не передан")
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.parsed_body.dig("error", "code")).to eq("INVALID_UPLOAD")
   end
 
   it "возвращает 422, если ML отверг файл как не-изображение" do
@@ -62,8 +62,8 @@ RSpec.describe "Predictions analyze", type: :request do
          headers: headers
 
     expect(response).to have_http_status(:unprocessable_content)
-    expect(response.parsed_body["error"]).to be_present
-    expect(response.parsed_body.dig("details", "detail")).to eq(
+    expect(response.parsed_body.dig("error", "code")).to eq("INVALID_UPLOAD")
+    expect(response.parsed_body.dig("error", "details", "detail")).to eq(
       "Файл должен быть изображением или ZIP-архивом"
     )
   end
@@ -76,7 +76,7 @@ RSpec.describe "Predictions analyze", type: :request do
          headers: headers
 
     expect(response).to have_http_status(:internal_server_error)
-    expect(response.parsed_body["error"]).to eq("Ошибка ML-сервиса")
+    expect(response.parsed_body.dig("error", "code")).to eq("INTERNAL_ERROR")
   end
 
   it "возвращает 500, если ML-сервис ответил ошибкой" do
@@ -87,8 +87,7 @@ RSpec.describe "Predictions analyze", type: :request do
          headers: headers
 
     expect(response).to have_http_status(:internal_server_error)
-    expect(response.parsed_body["error"]).to eq("Ошибка ML-сервиса")
-    expect(response.parsed_body.dig("details", "details", "detail")).to eq("Internal ML error")
+    expect(response.parsed_body.dig("error", "code")).to eq("INTERNAL_ERROR")
   end
 
   it "не падает, если ML вернул класс, которого нет в справочнике" do

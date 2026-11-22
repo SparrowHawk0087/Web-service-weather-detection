@@ -6,7 +6,11 @@ class PredictionsController < ApplicationController
   # Legacy synchronous endpoint. Kept for backward compatibility.
   def analyze
     unless params[:file].present?
-      return render json: { error: "Файл не передан" }, status: :bad_request
+      return render_api_error(
+        "INVALID_UPLOAD",
+        "An image file is required",
+        status: :unprocessable_content
+      )
     end
 
     model_id = params[:model_id].presence || "vision-v1"
@@ -28,15 +32,19 @@ class PredictionsController < ApplicationController
         }
       }
     elsif [400, 422].include?(ml_response[:http_status])
-      render json: {
-        error: "Некорректный файл",
-        details: ml_response[:details]
-      }, status: :unprocessable_content
+      render_api_error(
+        "INVALID_UPLOAD",
+        "The ML service rejected the uploaded file",
+        details: ml_response[:details] || {},
+        status: :unprocessable_content
+      )
     else
-      render json: {
-        error: "Ошибка ML-сервиса",
-        details: ml_response
-      }, status: :internal_server_error
+      render_api_error(
+        "INTERNAL_ERROR",
+        "The ML service could not process the request",
+        details: { http_status: ml_response[:http_status] }.compact,
+        status: :internal_server_error
+      )
     end
   end
 
@@ -134,8 +142,19 @@ class PredictionsController < ApplicationController
     if prediction.save
       render json: { status: "success", prediction: { id: prediction.id } }, status: :created
     else
-      render json: { error: prediction.errors.full_messages }, status: :unprocessable_entity
+      render_api_error(
+        "INVALID_UPLOAD",
+        "The prediction could not be saved",
+        details: { errors: prediction.errors.full_messages },
+        status: :unprocessable_entity
+      )
     end
+  rescue JSON::ParserError
+    render_api_error(
+      "INVALID_UPLOAD",
+      "The probabilities field must contain valid JSON",
+      status: :unprocessable_entity
+    )
   end
 
   # GET /predictions
