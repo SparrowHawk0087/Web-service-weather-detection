@@ -9,6 +9,11 @@ Rails.application.configure do
     "http://localhost:5173,http://127.0.0.1:5173"
   ).split(",").map(&:strip).reject(&:empty?)
 
-  # Permit dev-tunnel VS Code requests.
+  # Permit requests forwarded by the Docker-based Vite proxy and GitHub Codespaces.
+  # The leading dot allows the app.github.dev domain and its generated subdomains.
+  config.hosts << "backend-api"
+  config.hosts << ".app.github.dev"
+
+  # Permit the existing dev-tunnel VS Code request.
   config.hosts << "j0gpg5mj-3000.euw.devtunnels.ms"
 end
