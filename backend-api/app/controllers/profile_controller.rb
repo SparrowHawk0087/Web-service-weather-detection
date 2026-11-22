@@ -34,11 +34,8 @@ class ProfileController < ApplicationController
       incoming_settings = payload[:settings].to_h
 
       if incoming_settings.key?("animations_enabled") || incoming_settings.key?(:animations_enabled)
-        value = if incoming_settings.key?("animations_enabled")
-                  incoming_settings["animations_enabled"]
-                else
-                  incoming_settings[:animations_enabled]
-                end
+        value = incoming_settings.key?("animations_enabled") ?
+          incoming_settings["animations_enabled"] : incoming_settings[:animations_enabled]
 
         unless [true, false, "true", "false"].include?(value)
           return render_api_error(
@@ -140,6 +137,36 @@ class ProfileController < ApplicationController
   # GET /profile/statistics
   def statistics
     render json: ProfileStatisticsService.new(current_user).call
+  end
+
+  # DELETE /profile
+  def destroy
+    payload = params.permit(:current_password, :confirmation)
+
+    unless current_user.authenticate(payload[:current_password].to_s)
+      return render_api_error(
+        "INVALID_CURRENT_PASSWORD",
+        "The current password is incorrect",
+        status: :unprocessable_entity
+      )
+    end
+
+    unless payload[:confirmation] == "DELETE"
+      return render_api_error(
+        "CONFIRMATION_REQUIRED",
+        "Type DELETE to confirm account deletion",
+        status: :unprocessable_entity
+      )
+    end
+
+    AccountDeletionService.new(current_user).call
+    head :no_content
+  rescue AccountDeletionService::CleanupEnqueueFailed
+    render_api_error(
+      "MEDIA_CLEANUP_UNAVAILABLE",
+      "The account was anonymized, but media cleanup could not be scheduled",
+      status: :service_unavailable
+    )
   end
 
   private

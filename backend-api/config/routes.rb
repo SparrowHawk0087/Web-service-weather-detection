@@ -43,6 +43,9 @@ Rails.application.routes.draw do
   patch  "/profile",            to: "profile#update"
   patch  "/profile/password",   to: "profile#update_password"
   get    "/profile/statistics", to: "profile#statistics"
+  delete "/profile",            to: "profile#destroy"
+
+  delete "/predictions/clear", to: "predictions#clear_history"
 
   mount ActionCable.server => "/cable"
   mount Sidekiq::Web => "/sidekiq"

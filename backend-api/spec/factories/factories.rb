@@ -43,6 +43,11 @@ FactoryBot.define do
     end
   end
 
+  factory :prediction_dispatch do
+    prediction
+    attempt_count { 0 }
+  end
+
   factory :feedback do
     prediction
     user
