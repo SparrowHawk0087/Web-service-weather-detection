@@ -63,6 +63,18 @@ export function isPredictionRecord(value) {
     return false
   }
 
+  if (value.status === 'completed') {
+    if (typeof value.weather_code !== 'string' || !value.weather_code) return false
+    if (typeof value.weather_condition !== 'string' || value.confidence === null) return false
+  } else if (
+    value.weather_code !== null
+    || value.weather_condition !== null
+    || value.confidence !== null
+    || Object.keys(value.probabilities).length > 0
+  ) {
+    return false
+  }
+
   if (
     typeof value.created_at !== 'string'
     || !Number.isFinite(Date.parse(value.created_at))

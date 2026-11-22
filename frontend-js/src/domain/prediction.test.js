@@ -32,9 +32,17 @@ function prediction(overrides = {}) {
   }
 }
 
-test('accepts each documented Prediction status, including failed', () => {
-  for (const status of ['pending', 'processing', 'completed', 'failed', 'cancelled']) {
-    assert.equal(isPredictionRecord(prediction({ status })), true)
+test('accepts each documented Prediction status with its contract-specific fields', () => {
+  assert.equal(isPredictionRecord(prediction({ status: 'completed' })), true)
+
+  for (const status of ['pending', 'processing', 'failed', 'cancelled']) {
+    assert.equal(isPredictionRecord(prediction({
+      status,
+      weather_code: null,
+      weather_condition: null,
+      confidence: null,
+      probabilities: {},
+    })), true)
   }
 })
 
