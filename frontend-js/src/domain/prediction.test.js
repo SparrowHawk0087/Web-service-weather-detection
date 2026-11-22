@@ -78,6 +78,8 @@ test('upsert replaces the complete record rather than merging old fields', () =>
   const incoming = prediction({
     updated_at: '2026-11-22T10:00:05.000Z',
     status: 'processing',
+    weather_code: null,
+    weather_condition: null,
     confidence: null,
     probabilities: {},
   })
