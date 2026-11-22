@@ -106,7 +106,7 @@ RSpec.describe "Predictions happy path", type: :request do
     )
     expect(list.first["confidence"]).to be_within(0.001).of(0.92)
     expect(list.first["probabilities"]).to eq(
-      "rain" => 0.92, "snow" => 0.05, "fog" => 0.03
+      "RAIN" => 0.92, "SNOW" => 0.05, "FOG" => 0.03
     )
 
     # 6. Переименование
