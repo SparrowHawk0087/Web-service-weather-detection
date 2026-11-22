@@ -32,15 +32,47 @@ export function isPredictionRecord(value) {
   if (!PREDICTION_STATUSES.includes(value.status)) return false
   if (!isPlainObject(value.probabilities)) return false
 
-  return (
-    Object.hasOwn(value, 'weather_code')
-    && Object.hasOwn(value, 'weather_condition')
-    && Object.hasOwn(value, 'confidence')
-    && Object.hasOwn(value, 'image_url')
-    && Object.hasOwn(value, 'image_content_type')
-    && Object.hasOwn(value, 'created_at')
-    && Object.hasOwn(value, 'updated_at')
-  )
+  const optionalStringFields = [
+    value.weather_code,
+    value.weather_condition,
+    value.image_url,
+    value.image_content_type,
+  ]
+  if (!optionalStringFields.every((field) => field === null || typeof field === 'string')) {
+    return false
+  }
+
+  if (
+    value.confidence !== null
+    && (
+      typeof value.confidence !== 'number'
+      || !Number.isFinite(value.confidence)
+      || value.confidence < 0
+      || value.confidence > 1
+    )
+  ) {
+    return false
+  }
+
+  if (!Object.values(value.probabilities).every((probability) => (
+    typeof probability === 'number'
+    && Number.isFinite(probability)
+    && probability >= 0
+    && probability <= 1
+  ))) {
+    return false
+  }
+
+  if (
+    typeof value.created_at !== 'string'
+    || !Number.isFinite(Date.parse(value.created_at))
+    || typeof value.updated_at !== 'string'
+    || !Number.isFinite(Date.parse(value.updated_at))
+  ) {
+    return false
+  }
+
+  return true
 }
 
 export function isPredictionUpdate(message) {

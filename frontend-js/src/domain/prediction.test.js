@@ -79,7 +79,7 @@ test('upsert replaces the complete record rather than merging old fields', () =>
 
   assert.equal(result.length, 1)
   assert.equal(result[0], incoming)
-  assert.equal(Object.hasOwn(result[0], 'old_frontend_field'), true)
+  assert.equal(Object.hasOwn(result[0], 'old_frontend_field'), false)
 })
 
 test('upsert ignores stale WebSocket events', () => {
