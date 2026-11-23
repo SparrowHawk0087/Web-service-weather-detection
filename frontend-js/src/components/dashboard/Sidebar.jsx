@@ -78,7 +78,6 @@ export default function Sidebar({
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [isBulkPinning, setIsBulkPinning] = useState(false)
 
-  const sidebarRef = useRef(null)
   const listRef = useRef(null)
   const sentinelRef = useRef(null)
   const editInputRef = useRef(null)
@@ -129,7 +128,7 @@ export default function Sidebar({
       document.removeEventListener('pointerdown', handleOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [editingId])
+  }, [editingId, openMenuId])
 
   useEffect(() => {
     const root = listRef.current
@@ -264,7 +263,7 @@ export default function Sidebar({
       </button>
       {isMobileOpen && <button type="button" className="history-sidebar-scrim" aria-label="Закрыть историю" onClick={() => setIsMobileOpen(false)} />}
 
-      <aside ref={sidebarRef} className={sidebarClasses} aria-label="История анализов">
+      <aside className={sidebarClasses} aria-label="История анализов">
         <div className="history-sidebar-header">
           <Link to="/profile" className="history-user-card" title="Открыть профиль">
             <span className="history-avatar">{user?.name?.charAt(0).toUpperCase() || '?'}</span>
