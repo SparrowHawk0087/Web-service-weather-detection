@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import {
   clearPredictionHistory,
   deleteProfile,
   getProfile,
+  getProfileActivity,
   getProfileStatistics,
   updatePassword,
   updateProfile,
@@ -22,15 +23,18 @@ import ModelPerformance from '../components/profile/ModelPerformance.jsx'
 export default function ProfilePage() {
   const { user, setUser, logout } = useAuth()
   const navigate = useNavigate()
+  const activityRequestId = useRef(0)
 
   const [profileLoading, setProfileLoading] = useState(true)
   const [profileError, setProfileError] = useState('')
   const [statistics, setStatistics] = useState(null)
   const [statisticsLoading, setStatisticsLoading] = useState(true)
   const [statisticsError, setStatisticsError] = useState('')
+  const [activityData, setActivityData] = useState(null)
+  const [activityLoading, setActivityLoading] = useState(true)
+  const [activityError, setActivityError] = useState('')
   const [activityPeriod, setActivityPeriod] = useState('month')
   const [activityOffset, setActivityOffset] = useState(0)
-  const [activityLoading, setActivityLoading] = useState(false)
   const [statisticsRefresh, setStatisticsRefresh] = useState(0)
 
   const [savingProfile, setSavingProfile] = useState(false)
@@ -61,17 +65,25 @@ export default function ProfilePage() {
     }
   }, [setUser])
 
+  // This request owns the profile-wide analytics cards. Calendar navigation
+  // never changes this state or starts this request.
   useEffect(() => {
     let active = true
 
-    getProfileStatistics({
-      activityPeriod,
-      activityOffset,
-    })
+    getProfileStatistics()
       .then((result) => {
         if (!active) return
         setStatistics(result)
         setStatisticsError('')
+        setActivityData({
+          activity: result.activity || [],
+          activity_period: result.activity_period || 'month',
+          activity_offset: result.activity_offset || 0,
+          activity_range: result.activity_range || null,
+        })
+        setActivityPeriod(result.activity_period || 'month')
+        setActivityOffset(result.activity_offset || 0)
+        setActivityError('')
       })
       .catch((error) => {
         if (active) setStatisticsError(error.message || 'Не удалось загрузить статистику.')
@@ -86,7 +98,31 @@ export default function ProfilePage() {
     return () => {
       active = false
     }
-  }, [activityPeriod, activityOffset, statisticsRefresh])
+  }, [statisticsRefresh])
+
+  async function loadActivity(period, offset) {
+    const requestId = activityRequestId.current + 1
+    activityRequestId.current = requestId
+    setActivityLoading(true)
+    setActivityError('')
+
+    try {
+      const result = await getProfileActivity({
+        activityPeriod: period,
+        activityOffset: offset,
+      })
+
+      if (activityRequestId.current !== requestId) return
+      setActivityData(result)
+    } catch (error) {
+      if (activityRequestId.current !== requestId) return
+      setActivityError(error.message || 'Не удалось обновить активность.')
+    } finally {
+      if (activityRequestId.current === requestId) {
+        setActivityLoading(false)
+      }
+    }
+  }
 
   function retryProfile() {
     setProfileLoading(true)
@@ -101,6 +137,7 @@ export default function ProfilePage() {
 
   function retryStatistics() {
     setStatisticsLoading(true)
+    setActivityLoading(true)
     setStatisticsRefresh((current) => current + 1)
   }
 
@@ -155,8 +192,11 @@ export default function ProfilePage() {
     setNotice(null)
     try {
       const result = await clearPredictionHistory()
-      setStatisticsLoading(true)
+      activityRequestId.current += 1
+      setActivityPeriod('month')
       setActivityOffset(0)
+      setStatisticsLoading(true)
+      setActivityLoading(true)
       setStatisticsRefresh((current) => current + 1)
       setNotice({
         type: 'success',
@@ -192,16 +232,16 @@ export default function ProfilePage() {
   function handleActivityPeriodChange(period) {
     if (period === activityPeriod && activityOffset === 0) return
 
-    setActivityLoading(true)
     setActivityPeriod(period)
     setActivityOffset(0)
+    loadActivity(period, 0)
   }
 
   function handleActivityOffsetChange(offset) {
     if (offset === activityOffset) return
 
-    setActivityLoading(true)
     setActivityOffset(offset)
+    loadActivity(activityPeriod, offset)
   }
 
   const profile = user || null
@@ -268,12 +308,14 @@ export default function ProfilePage() {
             <div className="profile-chart-grid">
               <WeatherDistribution data={statistics?.class_distribution || []} loading={statisticsLoading} />
               <ActivityHeatmap
-                data={statistics?.activity || []}
-                range={statistics?.activity_range}
+                data={activityData?.activity || []}
+                range={activityData?.activity_range}
                 period={activityPeriod}
                 offset={activityOffset}
-                loading={statisticsLoading}
-                refreshing={activityLoading}
+                loading={activityLoading && !activityData}
+                refreshing={activityLoading && Boolean(activityData)}
+                error={activityError}
+                onRetry={() => loadActivity(activityPeriod, activityOffset)}
                 onPeriodChange={handleActivityPeriodChange}
                 onOffsetChange={handleActivityOffsetChange}
               />

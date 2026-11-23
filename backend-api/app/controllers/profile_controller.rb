@@ -134,6 +134,17 @@ class ProfileController < ApplicationController
     render json: { status: "password_updated" }
   end
 
+  # GET /profile/statistics/activity
+  # Returns only the selected activity calendar. Other profile analytics are not
+  # recalculated or sent when the user changes the calendar period.
+  def activity
+    render json: ProfileStatisticsService.new(
+      current_user,
+      activity_period: params[:activity_period],
+      activity_offset: params[:activity_offset]
+    ).activity_payload
+  end
+
   # GET /profile/statistics
   def statistics
     render json: ProfileStatisticsService.new(

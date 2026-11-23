@@ -32,6 +32,15 @@ class ProfileStatisticsService
     }
   end
 
+  def activity_payload
+    {
+      activity: activity,
+      activity_period: activity_period,
+      activity_offset: activity_offset,
+      activity_range: activity_range
+    }
+  end
+
   private
 
   attr_reader :user, :time_zone, :activity_period, :activity_offset

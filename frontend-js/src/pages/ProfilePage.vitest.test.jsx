@@ -13,6 +13,7 @@ vi.mock('../api/profile.js', () => ({
   clearPredictionHistory: vi.fn(),
   deleteProfile: vi.fn(),
   getProfile: vi.fn(),
+  getProfileActivity: vi.fn(),
   getProfileStatistics: vi.fn(),
   updatePassword: vi.fn(),
   updateProfile: vi.fn(),
@@ -83,6 +84,12 @@ describe('ProfilePage', () => {
     useAuth.mockReturnValue({ user, setUser, logout })
     profileApi.getProfile.mockResolvedValue(user)
     profileApi.getProfileStatistics.mockResolvedValue(statistics)
+    profileApi.getProfileActivity.mockImplementation(async ({ activityPeriod = 'month', activityOffset = 0 } = {}) => ({
+      activity_period: activityPeriod,
+      activity_offset: activityOffset,
+      activity_range: statistics.activity_range,
+      activity: statistics.activity,
+    }))
     profileApi.updateProfile.mockImplementation(async (payload) => ({
       ...user,
       ...payload,
@@ -155,7 +162,7 @@ describe('ProfilePage', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Неделя' }))
     await waitFor(() => {
-      expect(profileApi.getProfileStatistics).toHaveBeenLastCalledWith({
+      expect(profileApi.getProfileActivity).toHaveBeenLastCalledWith({
         activityPeriod: 'week',
         activityOffset: 0,
       })
@@ -163,7 +170,7 @@ describe('ProfilePage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Предыдущий период' }))
     await waitFor(() => {
-      expect(profileApi.getProfileStatistics).toHaveBeenLastCalledWith({
+      expect(profileApi.getProfileActivity).toHaveBeenLastCalledWith({
         activityPeriod: 'week',
         activityOffset: -1,
       })
@@ -171,11 +178,15 @@ describe('ProfilePage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Год' }))
     await waitFor(() => {
-      expect(profileApi.getProfileStatistics).toHaveBeenLastCalledWith({
+      expect(profileApi.getProfileActivity).toHaveBeenLastCalledWith({
         activityPeriod: 'year',
         activityOffset: 0,
       })
     })
+
+    // The profile-wide endpoint is called only on initial render.
+    expect(profileApi.getProfileStatistics).toHaveBeenCalledTimes(1)
+    expect(profileApi.getProfileActivity).toHaveBeenCalledTimes(3)
   })
 
   it('keeps all non-activity analytics visible while a new activity period is loading', async () => {
@@ -183,7 +194,7 @@ describe('ProfilePage', () => {
     renderPage()
 
     expect(await screen.findByText('Weather Vision v1')).toBeTruthy()
-    profileApi.getProfileStatistics.mockReturnValueOnce(new Promise((resolve) => {
+    profileApi.getProfileActivity.mockReturnValueOnce(new Promise((resolve) => {
       resolveActivity = resolve
     }))
 
@@ -192,6 +203,8 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Обзор активности')).toBeTruthy()
     expect(screen.getByText('Weather Vision v1')).toBeTruthy()
     expect(screen.getByText('87.0%')).toBeTruthy()
+    expect(profileApi.getProfileStatistics).toHaveBeenCalledTimes(1)
+    expect(profileApi.getProfileActivity).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('list', { name: 'Количество анализов за выбранный период' }).getAttribute('aria-busy')).toBe('true')
     expect(screen.getByText('Обновление', { selector: '.profile-activity-refresh' })).toBeTruthy()
 
@@ -231,6 +244,7 @@ describe('ProfilePage', () => {
     fireEvent.click(monthButton)
 
     expect(profileApi.getProfileStatistics).toHaveBeenCalledTimes(1)
+    expect(profileApi.getProfileActivity).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Следующий период' }).disabled).toBe(true)
   })
 

@@ -25,6 +25,16 @@ export async function getProfileStatistics({ activityPeriod = 'month', activityO
   return response.data
 }
 
+export async function getProfileActivity({ activityPeriod = 'month', activityOffset = 0 } = {}) {
+  const response = await apiClient.get('/profile/statistics/activity', {
+    params: {
+      activity_period: activityPeriod,
+      activity_offset: activityOffset,
+    },
+  })
+  return response.data
+}
+
 export async function clearPredictionHistory() {
   const response = await apiClient.delete('/predictions/clear')
   return response.data

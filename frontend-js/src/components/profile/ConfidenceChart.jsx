@@ -88,7 +88,7 @@ export default function ConfidenceChart({ activity = [], trend = [], loading = f
                 strokeWidth={2.5}
                 dot={{ r: 2.5, fill: 'var(--profile-accent)', strokeWidth: 0 }}
                 activeDot={{ r: 5, fill: 'var(--profile-text)', stroke: 'var(--profile-accent)', strokeWidth: 2 }}
-                connectNulls={false}
+                connectNulls={true}
                 isAnimationActive={false}
               />
             </LineChart>

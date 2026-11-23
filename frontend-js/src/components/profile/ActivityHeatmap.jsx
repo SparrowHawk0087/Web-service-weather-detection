@@ -54,6 +54,8 @@ export default function ActivityHeatmap({
   offset = 0,
   loading = false,
   refreshing = false,
+  error = '',
+  onRetry,
   onPeriodChange,
   onOffsetChange,
 }) {
@@ -108,6 +110,13 @@ export default function ActivityHeatmap({
           <p className="profile-total-label">анализов</p>
         </div>
       </div>
+
+      {error && (
+        <div className="profile-inline-alert is-warning profile-activity-error" role="alert">
+          <span>{error}</span>
+          <button type="button" onClick={onRetry}>Повторить</button>
+        </div>
+      )}
 
       <div className="profile-activity-toolbar">
         <div className="profile-period-tabs" role="group" aria-label="Период активности">

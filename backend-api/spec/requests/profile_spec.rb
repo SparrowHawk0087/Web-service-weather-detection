@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Profile API", type: :request do
-  let(:user) { create(:user) }
+  let(:user) { create(:user, timezone: "UTC") }
   let(:headers) { auth_headers(token_for(user)) }
 
   describe "GET /profile" do
@@ -165,6 +165,32 @@ RSpec.describe "Profile API", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body.dig("error", "code")).to eq("PASSWORD_MISMATCH")
+    end
+  end
+
+  describe "GET /profile/statistics/activity" do
+    it "returns only the requested activity calendar for the authenticated user" do
+      travel_to Time.utc(2026, 11, 23, 12, 0, 0) do
+        create(:prediction, user: user, status: "processing", created_at: Time.utc(2026, 11, 19, 10, 0, 0))
+
+        get "/profile/statistics/activity",
+            params: { activity_period: "week", activity_offset: -1 },
+            headers: headers
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body.keys).to contain_exactly(
+          "activity", "activity_period", "activity_offset", "activity_range"
+        )
+        expect(response.parsed_body.fetch("activity_period")).to eq("week")
+        expect(response.parsed_body.fetch("activity_offset")).to eq(-1)
+        expect(response.parsed_body.fetch("activity").size).to eq(7)
+        expect(response.parsed_body.fetch("activity").find { |day| day["date"] == "2026-11-19" }).to include("count" => 1)
+      end
+    end
+
+    it "requires authentication" do
+      get "/profile/statistics/activity"
+      expect(response).to have_http_status(:unauthorized)
     end
   end
 

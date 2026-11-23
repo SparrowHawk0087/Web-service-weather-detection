@@ -42,6 +42,7 @@ Rails.application.routes.draw do
   get    "/profile",            to: "profile#show"
   patch  "/profile",            to: "profile#update"
   patch  "/profile/password",   to: "profile#update_password"
+  get    "/profile/statistics/activity", to: "profile#activity"
   get    "/profile/statistics", to: "profile#statistics"
   delete "/profile",            to: "profile#destroy"
 
