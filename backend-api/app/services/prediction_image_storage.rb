@@ -54,5 +54,7 @@ class PredictionImageStorage
   def self.delete!(storage_key)
     path = path_for(storage_key)
     File.delete(path) if File.file?(path)
+  rescue Errno::EACCES, Errno::EPERM, Errno::EROFS, Errno::EIO, Errno::ENOSPC => error
+    raise StorageUnavailable, "Unable to delete image: #{error.message}"
   end
 end

@@ -38,7 +38,15 @@ Rails.application.routes.draw do
   post   "/signup", to: "users#create"
   post   "/login",  to: "sessions#create"
   delete "/logout", to: "sessions#destroy"
-  get    "/profile", to: "profile#show"
+
+  get    "/profile",            to: "profile#show"
+  patch  "/profile",            to: "profile#update"
+  patch  "/profile/password",   to: "profile#update_password"
+  get    "/profile/statistics/activity", to: "profile#activity"
+  get    "/profile/statistics", to: "profile#statistics"
+  delete "/profile",            to: "profile#destroy"
+
+  delete "/predictions/clear", to: "predictions#clear_history"
 
   mount ActionCable.server => "/cable"
   mount Sidekiq::Web => "/sidekiq"

@@ -1,6 +1,18 @@
 class PredictionsController < ApplicationController
   before_action :authenticate_request,
-                only: [:create, :index, :show, :analyze, :enqueue, :update, :destroy]
+                only: [:create, :index, :show, :analyze, :enqueue, :update, :destroy, :clear_history]
+
+  # DELETE /predictions/clear
+  def clear_history
+    result = PredictionHistoryCleanupService.new(current_user).call
+    render json: { status: "success", deleted_count: result.fetch(:deleted_count) }
+  rescue PredictionHistoryCleanupService::CleanupEnqueueFailed
+    render_api_error(
+      "MEDIA_CLEANUP_UNAVAILABLE",
+      "Analysis history was hidden, but media cleanup could not be scheduled",
+      status: :service_unavailable
+    )
+  end
 
   # POST /predictions/analyze
   # Legacy synchronous endpoint. Kept for backward compatibility.

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_22_210000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_22_214000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -122,6 +122,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_22_210000) do
     t.string "idempotency_key"
     t.string "image_checksum"
     t.timestamptz "image_deleted_at"
+    t.timestamptz "media_cleanup_requested_at"
     t.integer "image_height"
     t.bigint "image_size_bytes"
     t.integer "image_width"
@@ -143,6 +144,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_22_210000) do
     t.string "validation_status"
     t.bigint "weather_condition_id"
     t.index ["public_id"], name: "index_predictions_on_public_id", unique: true
+    t.index ["media_cleanup_requested_at", "id"], name: "idx_predictions_media_cleanup_recovery", where: "((deleted_at IS NOT NULL) AND ((storage_key IS NOT NULL) OR (heatmap_storage_key IS NOT NULL)))"
     t.index ["status", "created_at"], name: "idx_predictions_status_recent", order: { created_at: :desc }
     t.index ["user_id", "created_at"], name: "idx_predictions_user_recent", order: { created_at: :desc }
     t.index ["user_id", "idempotency_key"], name: "uniq_predictions_user_idempotency_key", unique: true, where: "(idempotency_key IS NOT NULL)"

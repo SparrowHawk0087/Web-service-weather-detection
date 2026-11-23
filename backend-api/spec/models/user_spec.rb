@@ -25,12 +25,12 @@ RSpec.describe User, type: :model do
       expect(user).to be_anonymized
     end
 
-    it "помечает предсказания удалёнными и стирает ключи к изображениям" do
+    it "помечает предсказания удалёнными и сохраняет ключи до фонового удаления медиа" do
       user.anonymize!
       prediction.reload
       expect(prediction.deleted_at).to be_present
-      expect(prediction.storage_key).to be_nil
-      expect(prediction.image_deleted_at).to be_present
+      expect(prediction.storage_key).to eq("s3://x/img.jpg")
+      expect(prediction.image_deleted_at).to be_nil
     end
   end
 

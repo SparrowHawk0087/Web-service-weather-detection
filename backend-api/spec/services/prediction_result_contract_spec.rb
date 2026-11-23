@@ -79,7 +79,7 @@ RSpec.describe PredictionResultContract do
 
     it "rejects an unknown or inactive predicted class" do
       response = ml_response.deep_dup
-      response[:prediction][:class] = "clear"
+      response[:prediction][:class] = "hail"
 
       expect { described_class.new(response).call }
         .to raise_error(PredictionResultContract::InvalidResult, /Unknown or inactive/)

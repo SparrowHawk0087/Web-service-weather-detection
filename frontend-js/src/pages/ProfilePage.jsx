@@ -1,301 +1,336 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/useAuth'
-
-// colors for piechart
-const WEATHER_COLORS = {
-  Snow: '#a855f7',
-  Rain: '#22d3ee',
-  Fog: '#f472b6',
-};
-
-// piechart
-function PieChart({ segments, size = 220 }) {
-  const total = segments.reduce((sum, s) => sum + s.value, 0)
-
-  if (total === 0) {
-    return (
-      <div
-        className="rounded-full border-2 border-dashed border-white/15 flex items-center justify-center bg-white/[0.02]"
-        style={{ width: size, height: size }}
-      >
-        <span className="text-white/30 text-xs text-center px-6">
-          No data yet
-        </span>
-      </div>
-    )
-  }
-
-  const { stops } = segments.reduce((result, segment) => {
-    const start = (result.cumulative / total) * 100
-    const cumulative = result.cumulative + segment.value
-    const end = (cumulative / total) * 100
-
-    return {
-      cumulative,
-      stops: [...result.stops, `${segment.color} ${start}% ${end}%`],
-    }
-  }, { cumulative: 0, stops: [] })
-
-  const gradientStops = stops.join(', ')
-
-  return (
-    <div
-      className="rounded-full"
-      style={{
-        width: size,
-        height: size,
-        background: `conic-gradient(${gradientStops})`,
-      }}
-    />
-  )
-}
-
-function ProfileCard() {
-  const { user } = useAuth();
-  const [form, setForm] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    password: '',
-  })
-
-  const initial = user?.name?.charAt(0).toUpperCase() || '?'
-
-  const isDirty =
-    form.name !== (user?.name || '') ||
-    form.email !== (user?.email || '') ||
-    form.password !== ''
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!isDirty) return;
-    console.log('>>> save profile:', form)
-    // TODO: PATCH /profile
-  }
-
-  const handleReset = () => {
-    setForm({
-      name: user?.name || '',
-      email: user?.email || '',
-      password: '',
-    })
-  }
-
-  const handleEraseHistory = () => {
-    // TODO: DELETE /analyses
-    console.log('>>> erase history')
-  }
-
-  const handleDeleteProfile = () => {
-    // TODO: DELETE /profile
-    console.log('>>> delete profile')
-  }
-
-  const inputClass =
-    'w-full rounded-xl bg-white/[0.04] border border-white/15 px-4 py-3 text-white placeholder-white/40 text-sm focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition'
-
-  return (
-    <div className="rounded-3xl bg-white/[0.04] border border-white/10 backdrop-blur-sm p-6 flex flex-col">
-      <h2 className="text-xl font-semibold text-white text-center mb-6">
-        Profile
-      </h2>
-
-      <div className="flex items-start gap-4 mb-6">
-        {/* avatar */}
-        <div className="shrink-0 w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-500 flex items-center justify-center text-white text-3xl font-bold">
-          {initial}
-        </div>
-
-        {/* input forms */}
-        <form onSubmit={handleSubmit} className="flex-1 space-y-3">
-          <input
-            type="text"
-            name="name"
-            placeholder="Nickname"
-            value={form.name}
-            onChange={handleChange}
-            className={inputClass}
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            className={inputClass}
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="New password"
-            value={form.password}
-            onChange={handleChange}
-            className={inputClass}
-          />
-
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={!isDirty}
-              className="flex-1 py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white text-sm font-medium hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition"
-            >
-              Save changes
-            </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={!isDirty}
-              className="px-5 py-2.5 rounded-full bg-white/5 border border-white/15 text-white/70 text-sm hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition"
-            >
-              Reset
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Danger zone */}
-      <div className="mt-auto pt-6 border-t border-white/10 space-y-2">
-        <button
-          type="button"
-          onClick={handleEraseHistory}
-          className="w-full py-2.5 rounded-full bg-white/5 border border-white/15 text-white/70 text-sm hover:bg-white/10 transition"
-        >
-          Erase history from database
-        </button>
-        <button
-          type="button"
-          onClick={handleDeleteProfile}
-          className="w-full py-2.5 rounded-full bg-red-500/10 border border-red-400/30 text-red-300 text-sm hover:bg-red-500/20 transition"
-        >
-          Delete profile
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function StatRow({ label, value }) {
-  return (
-    <div className="flex justify-between text-sm">
-      <span className="text-white/60">{label}</span>
-      <span className="text-white font-medium">{value}</span>
-    </div>
-  )
-}
-
-function StatsCard() {
-  // test data
-  const stats = {
-    photosAnalyzed: 0,
-    avgModelResult: 0,
-    savedAnalyses: 0,
-    errorRate: 0,
-  }
-
-  const segments = [
-    { label: 'Snow', value: 0, color: WEATHER_COLORS.Snow },
-    { label: 'Rain', value: 0, color: WEATHER_COLORS.Rain },
-    { label: 'Fog', value: 0, color: WEATHER_COLORS.Fog },
-  ]
-
-  const total = segments.reduce((s, x) => s + x.value, 0)
-
-  return (
-    <div className="rounded-3xl bg-white/[0.04] border border-white/10 backdrop-blur-sm p-6 flex flex-col">
-      <h2 className="text-xl font-semibold text-white text-center mb-6">
-        Statistics
-      </h2>
-
-      <div className="flex justify-center mb-6">
-        <PieChart segments={segments} size={220} />
-      </div>
-
-      {/* legend */}
-      <div className="space-y-2 mb-6 max-w-[220px] mx-auto w-full">
-        {segments.map((seg) => (
-          <div key={seg.label} className="flex items-center gap-3">
-            <div
-              className="h-3 flex-1 rounded-full transition"
-              style={{
-                backgroundColor: seg.color,
-                opacity: total > 0 ? 1 : 0.25,
-              }}
-            />
-            <span className="text-white/70 text-sm w-12">{seg.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* numbers */}
-      <div className="mt-auto pt-6 border-t border-white/10 space-y-2">
-        <StatRow label="Photos analyzed" value={stats.photosAnalyzed} />
-        <StatRow
-          label="Avg. model result"
-          value={stats.avgModelResult.toFixed(1)}
-        />
-        <StatRow label="Saved analyses" value={stats.savedAnalyses} />
-        <StatRow label="Error rate" value={stats.errorRate.toFixed(1)} />
-      </div>
-    </div>
-  )
-}
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/useAuth.js'
+import {
+  clearPredictionHistory,
+  deleteProfile,
+  getProfile,
+  getProfileActivity,
+  getProfileStatistics,
+  updatePassword,
+  updateProfile,
+} from '../api/profile.js'
+import ProfileHeader from '../components/profile/ProfileHeader.jsx'
+import ProfileCard from '../components/profile/ProfileCard.jsx'
+import SecurityCard from '../components/profile/SecurityCard.jsx'
+import DangerZone from '../components/profile/DangerZone.jsx'
+import StatisticsOverview from '../components/profile/StatisticsOverview.jsx'
+import WeatherDistribution from '../components/profile/WeatherDistribution.jsx'
+import ActivityHeatmap from '../components/profile/ActivityHeatmap.jsx'
+import ConfidenceChart from '../components/profile/ConfidenceChart.jsx'
+import ModelPerformance from '../components/profile/ModelPerformance.jsx'
 
 export default function ProfilePage() {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, setUser, logout } = useAuth()
+  const navigate = useNavigate()
+  const activityRequestId = useRef(0)
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [profileError, setProfileError] = useState('')
+  const [statistics, setStatistics] = useState(null)
+  const [statisticsLoading, setStatisticsLoading] = useState(true)
+  const [statisticsError, setStatisticsError] = useState('')
+  const [activityData, setActivityData] = useState(null)
+  const [activityLoading, setActivityLoading] = useState(true)
+  const [activityError, setActivityError] = useState('')
+  const [activityPeriod, setActivityPeriod] = useState('month')
+  const [activityOffset, setActivityOffset] = useState(0)
+  const [statisticsRefresh, setStatisticsRefresh] = useState(0)
+
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [savingPreferences, setSavingPreferences] = useState(false)
+  const [clearingHistory, setClearingHistory] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [notice, setNotice] = useState(null)
+
+  useEffect(() => {
+    let active = true
+
+    getProfile()
+      .then((profile) => {
+        if (!active) return
+        setUser(profile)
+        setProfileError('')
+      })
+      .catch((error) => {
+        if (active) setProfileError(error.message || 'Не удалось загрузить профиль.')
+      })
+      .finally(() => {
+        if (active) setProfileLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [setUser])
+
+  // This request owns the profile-wide analytics cards. Calendar navigation
+  // never changes this state or starts this request.
+  useEffect(() => {
+    let active = true
+
+    getProfileStatistics()
+      .then((result) => {
+        if (!active) return
+        setStatistics(result)
+        setStatisticsError('')
+        setActivityData({
+          activity: result.activity || [],
+          activity_period: result.activity_period || 'month',
+          activity_offset: result.activity_offset || 0,
+          activity_range: result.activity_range || null,
+        })
+        setActivityPeriod(result.activity_period || 'month')
+        setActivityOffset(result.activity_offset || 0)
+        setActivityError('')
+      })
+      .catch((error) => {
+        if (active) setStatisticsError(error.message || 'Не удалось загрузить статистику.')
+      })
+      .finally(() => {
+        if (active) {
+          setStatisticsLoading(false)
+          setActivityLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [statisticsRefresh])
+
+  async function loadActivity(period, offset) {
+    const requestId = activityRequestId.current + 1
+    activityRequestId.current = requestId
+    setActivityLoading(true)
+    setActivityError('')
+
+    try {
+      const result = await getProfileActivity({
+        activityPeriod: period,
+        activityOffset: offset,
+      })
+
+      if (activityRequestId.current !== requestId) return
+      setActivityData(result)
+    } catch (error) {
+      if (activityRequestId.current !== requestId) return
+      setActivityError(error.message || 'Не удалось обновить активность.')
+    } finally {
+      if (activityRequestId.current === requestId) {
+        setActivityLoading(false)
+      }
+    }
   }
 
+  function retryProfile() {
+    setProfileLoading(true)
+    getProfile()
+      .then((data) => {
+        setUser(data)
+        setProfileError('')
+      })
+      .catch((error) => setProfileError(error.message || 'Не удалось загрузить профиль.'))
+      .finally(() => setProfileLoading(false))
+  }
+
+  function retryStatistics() {
+    setStatisticsLoading(true)
+    setActivityLoading(true)
+    setStatisticsRefresh((current) => current + 1)
+  }
+
+  async function handleProfileSave(payload) {
+    setSavingProfile(true)
+    setNotice(null)
+    try {
+      const updatedUser = await updateProfile(payload)
+      setUser(updatedUser)
+      setNotice({ type: 'success', text: 'Данные профиля сохранены.' })
+      return updatedUser
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message || 'Не удалось обновить профиль.' })
+      throw error
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  async function handlePasswordUpdate(payload) {
+    setSavingPassword(true)
+    setNotice(null)
+    try {
+      await updatePassword(payload)
+      setNotice({ type: 'success', text: 'Пароль обновлён. Остальные активные сессии завершены.' })
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message || 'Не удалось изменить пароль.' })
+      throw error
+    } finally {
+      setSavingPassword(false)
+    }
+  }
+
+  async function handlePreferenceChange(enabled) {
+    setSavingPreferences(true)
+    setNotice(null)
+    try {
+      const updatedUser = await updateProfile({
+        settings: { animations_enabled: enabled },
+      })
+      setUser(updatedUser)
+      setNotice({ type: 'success', text: 'Настройки интерфейса сохранены.' })
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message || 'Не удалось сохранить настройки.' })
+    } finally {
+      setSavingPreferences(false)
+    }
+  }
+
+  async function handleClearHistory() {
+    setClearingHistory(true)
+    setNotice(null)
+    try {
+      const result = await clearPredictionHistory()
+      activityRequestId.current += 1
+      setActivityPeriod('month')
+      setActivityOffset(0)
+      setStatisticsLoading(true)
+      setActivityLoading(true)
+      setStatisticsRefresh((current) => current + 1)
+      setNotice({
+        type: 'success',
+        text: `История очищена. Удалено записей: ${result.deleted_count ?? 0}. Очистка изображений выполняется в фоне.`,
+      })
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message || 'Не удалось очистить историю.' })
+      throw error
+    } finally {
+      setClearingHistory(false)
+    }
+  }
+
+  async function handleDeleteAccount(payload) {
+    setDeletingAccount(true)
+    try {
+      await deleteProfile(payload)
+      await logout(true)
+      navigate('/login', { replace: true })
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message || 'Не удалось удалить аккаунт.' })
+      throw error
+    } finally {
+      setDeletingAccount(false)
+    }
+  }
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
+
+  function handleActivityPeriodChange(period) {
+    if (period === activityPeriod && activityOffset === 0) return
+
+    setActivityPeriod(period)
+    setActivityOffset(0)
+    loadActivity(period, 0)
+  }
+
+  function handleActivityOffsetChange(offset) {
+    if (offset === activityOffset) return
+
+    setActivityOffset(offset)
+    loadActivity(activityPeriod, offset)
+  }
+
+  const profile = user || null
+  const settings = profile?.settings || {}
+
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 text-white">
-        {/* top line: back and logout */}
-        <div className="flex items-center justify-between mb-6">
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition"
-          >
-            <svg
-              className="w-4 h-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Back to dashboard
-          </Link>
+    <main className="profile-page">
+      <div className="profile-container">
+        <ProfileHeader onLogout={handleLogout} />
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="text-sm text-white/70 hover:text-white transition"
+        {notice && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`profile-notice ${notice.type === 'error' ? 'is-error' : 'is-success'}`}
           >
-            Logout →
-          </button>
-        </div>
-
-        {/* grid of 2 cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          <div className="md:col-span-2">
-            <ProfileCard />
+            <span>{notice.text}</span>
+            <button type="button" onClick={() => setNotice(null)} aria-label="Закрыть уведомление">×</button>
           </div>
-          <div className="md:col-span-3">
-            <StatsCard />
+        )}
+
+        {profileError && (
+          <div className="profile-inline-alert is-error">
+            <span>{profileError}</span>
+            <button type="button" onClick={retryProfile}>Повторить</button>
+          </div>
+        )}
+
+        {statisticsError && (
+          <div className="profile-inline-alert is-warning">
+            <span>{statisticsError}</span>
+            <button type="button" onClick={retryStatistics}>Обновить статистику</button>
+          </div>
+        )}
+
+        <div className="profile-layout">
+          <div className="profile-sidebar-column">
+            {profileLoading && !profile ? (
+              <div className="profile-glass-card profile-account-card profile-account-skeleton" />
+            ) : (
+              <ProfileCard
+                user={profile}
+                onSave={handleProfileSave}
+                saving={savingProfile}
+                animationsEnabled={settings.animations_enabled !== false}
+                onPreferenceChange={handlePreferenceChange}
+                savingPreferences={savingPreferences}
+              />
+            )}
+
+            <SecurityCard onUpdatePassword={handlePasswordUpdate} saving={savingPassword}>
+              <DangerZone
+                onClearHistory={handleClearHistory}
+                onDeleteAccount={handleDeleteAccount}
+                clearing={clearingHistory}
+                deleting={deletingAccount}
+              />
+            </SecurityCard>
+          </div>
+
+          <div className="profile-analytics-column">
+            <StatisticsOverview summary={statistics?.summary} loading={statisticsLoading} />
+
+            <div className="profile-chart-grid">
+              <WeatherDistribution data={statistics?.class_distribution || []} loading={statisticsLoading} />
+              <ActivityHeatmap
+                data={activityData?.activity || []}
+                range={activityData?.activity_range}
+                period={activityPeriod}
+                offset={activityOffset}
+                loading={activityLoading && !activityData}
+                refreshing={activityLoading && Boolean(activityData)}
+                error={activityError}
+                onRetry={() => loadActivity(activityPeriod, activityOffset)}
+                onPeriodChange={handleActivityPeriodChange}
+                onOffsetChange={handleActivityOffsetChange}
+              />
+            </div>
+
+            <ConfidenceChart
+              activity={statistics?.confidence_activity || []}
+              trend={statistics?.confidence_trend || []}
+              loading={statisticsLoading}
+            />
+
+            <ModelPerformance models={statistics?.models || []} loading={statisticsLoading} />
           </div>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
