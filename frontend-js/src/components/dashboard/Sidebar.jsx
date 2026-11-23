@@ -83,6 +83,7 @@ export default function Sidebar({
   const listRef = useRef(null)
   const sentinelRef = useRef(null)
   const editInputRef = useRef(null)
+  const renameFinishedRef = useRef(false)
   const count = Number.isFinite(historyCount) ? historyCount : history.length
 
   useEffect(() => {
@@ -117,7 +118,11 @@ export default function Sidebar({
       if (event.key !== 'Escape') return
       setOpenMenuId(null)
       setIsMobileOpen(false)
-      if (editingId !== null) { setEditingId(null); setEditingValue('') }
+      if (editingId !== null) {
+        renameFinishedRef.current = true
+        setEditingId(null)
+        setEditingValue('')
+      }
     }
     document.addEventListener('pointerdown', handleOutside)
     document.addEventListener('keydown', handleKeyDown)
@@ -157,13 +162,15 @@ export default function Sidebar({
   }
 
   const startRename = (item) => {
+    renameFinishedRef.current = false
     setEditingId(item.id)
     setEditingValue(item.name || item.original_filename || '')
     setOpenMenuId(null)
   }
 
   const finishRename = async (id, shouldSave = true) => {
-    if (editingId !== id) return
+    if (editingId !== id || renameFinishedRef.current) return
+    renameFinishedRef.current = true
     const nextName = editingValue.trim()
     const item = history.find((record) => record.id === id)
     const currentName = item?.name || item?.original_filename || ''
@@ -204,8 +211,9 @@ export default function Sidebar({
     if (isBulkPinning || selectedIds.size === 0) return
     const targets = history.filter((item) => selectedIds.has(item.id) && !item.is_favorite)
     setIsBulkPinning(true)
-    await Promise.allSettled(targets.map((item) => onToggleFavorite?.(item)))
-    setSelectedIds(new Set())
+    const results = await Promise.allSettled(targets.map((item) => onToggleFavorite?.(item)))
+    const succeeded = results.every((result) => result.status === 'fulfilled' && result.value === true)
+    if (succeeded) setSelectedIds(new Set())
     setIsBulkPinning(false)
   }
 

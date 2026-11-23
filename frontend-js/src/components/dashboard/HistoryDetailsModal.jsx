@@ -17,6 +17,13 @@ const PROBABILITY_COLORS = {
   CLEAR: '#f59e0b',
 }
 
+const RECOMMENDATIONS = {
+  RAIN: ['Снизьте скорость и увеличьте дистанцию', 'Включите ближний свет фар', 'Остерегайтесь аквапланирования'],
+  SNOW: ['Избегайте резких торможений и поворотов', 'Увеличьте дистанцию в 2–3 раза', 'Проверьте работу стеклоочистителей'],
+  FOG: ['Используйте противотуманные фары', 'Снизьте скорость до безопасной', 'Не используйте дальний свет'],
+  DEFAULT: ['Соблюдайте ПДД и скоростной режим', 'Будьте внимательны на дороге'],
+}
+
 function formatDate(value) {
   if (!value) return 'Не указано'
   const date = new Date(value)
@@ -76,9 +83,13 @@ export default function HistoryDetailsModal({
   const isCompleted = item.status === 'completed'
   const weather = WEATHER[item.weather_code] || { icon: '◌', color: 'var(--profile-text-2)' }
   const title = item.name || item.original_filename || 'Без названия'
-  const confidence = Number.isFinite(Number(item.confidence))
+  const confidence = item.confidence !== null && item.confidence !== undefined
+    && Number.isFinite(Number(item.confidence))
     ? Number(item.confidence)
     : null
+  const currentTips = isCompleted
+    ? (RECOMMENDATIONS[item.weather_code] || RECOMMENDATIONS.DEFAULT)
+    : []
 
   return (
     <div className="history-details-overlay">
@@ -242,7 +253,9 @@ export default function HistoryDetailsModal({
           {isCompleted && (
             <section className="history-details-recommendation">
               <span className="history-section-kicker">Рекомендации</span>
-              <p>Используйте классификацию как вспомогательную информацию и сопоставляйте её с фактической дорожной обстановкой.</p>
+              <ul>
+                {currentTips.map((tip) => <li key={tip}>{tip}</li>)}
+              </ul>
             </section>
           )}
         </div>

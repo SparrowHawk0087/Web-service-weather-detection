@@ -2994,3 +2994,37 @@ input {
 @media (prefers-reduced-motion: reduce) {
   .history-details-panel { animation: none; }
 }
+
+.history-details-recommendation ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-details-recommendation li {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  border: 1px solid var(--profile-line);
+  border-radius: 10px;
+  padding: 9px;
+  background: var(--profile-glass);
+  color: var(--profile-text-2);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.history-details-recommendation li::before {
+  content: "•";
+  color: var(--profile-accent);
+  font-weight: 900;
+}
+
+@media (max-width: 420px) {
+  .history-details-recommendation ul {
+    grid-template-columns: 1fr;
+  }
+}
