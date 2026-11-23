@@ -410,6 +410,7 @@ export default function DashboardPage() {
       <HistoryDetailsModal
         isOpen={!!selectedHistoryItem}
         onClose={() => setSelectedHistoryItem(null)}
+        onToggleFavorite={handleToggleFavorite}
         item={selectedHistoryItem}
       />
     </div>

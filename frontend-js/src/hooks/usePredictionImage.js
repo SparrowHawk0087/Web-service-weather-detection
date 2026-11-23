@@ -2,19 +2,17 @@ import { useEffect, useState } from 'react'
 import apiClient from '../api/client'
 
 export function usePredictionImage(imageUrl) {
-  const [objectUrl, setObjectUrl] = useState(null)
+  const [loadedImage, setLoadedImage] = useState({
+    source: null,
+    objectUrl: null,
+  })
 
   useEffect(() => {
-    if (!imageUrl) {
-      setObjectUrl(null)
-      return undefined
-    }
+    if (!imageUrl) return undefined
 
     const controller = new AbortController()
     let active = true
     let createdUrl = null
-
-    setObjectUrl(null)
 
     apiClient.get(imageUrl, {
       responseType: 'blob',
@@ -23,11 +21,12 @@ export function usePredictionImage(imageUrl) {
       if (!active || !data?.type?.startsWith('image/')) return
 
       createdUrl = URL.createObjectURL(data)
-      setObjectUrl(createdUrl)
-    }).catch((error) => {
-      if (error.name !== 'CanceledError' && error.name !== 'AbortError') {
-        // A missing or expired image should fall back to the visual placeholder.
-      }
+      setLoadedImage({
+        source: imageUrl,
+        objectUrl: createdUrl,
+      })
+    }).catch(() => {
+      // Missing/deleted images use the visual placeholder.
     })
 
     return () => {
@@ -37,5 +36,6 @@ export function usePredictionImage(imageUrl) {
     }
   }, [imageUrl])
 
-  return objectUrl
+  // Do not show the previous record's thumbnail while a new image is loading.
+  return loadedImage.source === imageUrl ? loadedImage.objectUrl : null
 }
