@@ -107,8 +107,8 @@ describe('History sidebar actions menu', () => {
 
     await waitFor(() => {
       expect(props.onToggleFavorite).toHaveBeenCalledWith(favoriteRecord)
-      expect(screen.queryByRole('checkbox', { name: 'Выбрать запись Мост' })).toBeNull()
     })
+    expect(screen.getByRole('checkbox', { name: 'Выбрать запись Мост' }).checked).toBe(false)
   })
 
   it('shows both favorite actions for a mixed selection', async () => {
