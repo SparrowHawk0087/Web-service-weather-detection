@@ -60,7 +60,6 @@ export default function DashboardPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [requestError, setRequestError] = useState(null)
   const [history, setHistory] = useState([])
-  const [historyTotalCount, setHistoryTotalCount] = useState(0)
   const [historyPagination, setHistoryPagination] = useState({
     page: 0,
     total_pages: 0,
@@ -143,7 +142,6 @@ export default function DashboardPage() {
 
       paginationRef.current = pagination
       setHistoryPagination(pagination)
-      setHistoryTotalCount(pagination.total_count ?? predictions.length)
       return true
     } catch (error) {
       if (requestSequence === requestSequenceRef.current) {
@@ -183,14 +181,6 @@ export default function DashboardPage() {
       )
     })
 
-    if (previous && !isMatching) {
-      setHistoryTotalCount((current) => Math.max(0, current - 1))
-    } else if (!previous && isMatching) {
-      const currentNewest = historyRef.current[0]
-      const isNewerThanLoadedWindow = !currentNewest
-        || Date.parse(updatedPrediction.created_at) >= Date.parse(currentNewest.created_at)
-      if (isNewerThanLoadedWindow) setHistoryTotalCount((current) => current + 1)
-    }
 
     setSelectedHistoryItem((current) => {
       if (current?.id !== updatedPrediction.id) return current
@@ -239,7 +229,6 @@ export default function DashboardPage() {
       realtimeUpdatesRef.current.set(queuedPrediction.id, queuedPrediction)
       if (matchesHistoryFilters(queuedPrediction, filtersRef.current)) {
         setHistory((current) => upsertPrediction(current, queuedPrediction, HISTORY_PAGE_SIZE))
-        setHistoryTotalCount((current) => current + 1)
       }
       setIsSubmitting(false)
 
@@ -265,9 +254,7 @@ export default function DashboardPage() {
   const handleDeletePrediction = async (id) => {
     try {
       await deletePrediction(id)
-      const existed = historyRef.current.some((item) => item.id === id)
       setHistory((current) => current.filter((item) => item.id !== id))
-      if (existed) setHistoryTotalCount((current) => Math.max(0, current - 1))
       if (selectedHistoryItem?.id === id) setSelectedHistoryItem(null)
       if (activePredictionId === id) setActivePredictionId(null)
       realtimeUpdatesRef.current.delete(id)
@@ -280,10 +267,9 @@ export default function DashboardPage() {
 
   const handleBulkDelete = async (ids) => {
     try {
-      const response = await bulkDeletePredictions(ids)
+      await bulkDeletePredictions(ids)
       const deletedIds = new Set(ids)
       setHistory((current) => current.filter((item) => !deletedIds.has(item.id)))
-      setHistoryTotalCount((current) => Math.max(0, current - response.deleted_count))
       if (selectedHistoryItem && deletedIds.has(selectedHistoryItem.id)) setSelectedHistoryItem(null)
       if (activePredictionId !== null && deletedIds.has(activePredictionId)) setActivePredictionId(null)
       ids.forEach((id) => realtimeUpdatesRef.current.delete(id))
@@ -301,15 +287,12 @@ export default function DashboardPage() {
         : await addPredictionFavorite(item.id)
       const updated = { ...item, is_favorite: result.is_favorite }
       realtimeUpdatesRef.current.set(updated.id, updated)
-      const wasMatching = matchesHistoryFilters(item, filtersRef.current)
       const isMatching = matchesHistoryFilters(updated, filtersRef.current)
 
       setHistory((current) => {
         if (!isMatching) return current.filter((record) => record.id !== item.id)
         return upsertPrediction(current, updated, Math.max(HISTORY_PAGE_SIZE, paginationRef.current.page * HISTORY_PAGE_SIZE))
       })
-      if (wasMatching && !isMatching) setHistoryTotalCount((current) => Math.max(0, current - 1))
-      else if (!wasMatching && isMatching) setHistoryTotalCount((current) => current + 1)
       setSelectedHistoryItem((current) => current?.id === item.id ? updated : current)
       return true
     } catch (error) {
@@ -321,10 +304,6 @@ export default function DashboardPage() {
   const handleRenamePrediction = async (id, name) => {
     try {
       await renamePrediction(id, name)
-      const previousPrediction = historyRef.current.find((item) => item.id === id)
-      const wasMatching = previousPrediction
-        ? matchesHistoryFilters(previousPrediction, filtersRef.current)
-        : false
       const refreshedPrediction = await getPrediction(id)
       if (!isPredictionRecord(refreshedPrediction)) {
         throw new Error('Сервер вернул Prediction в неизвестном формате')
@@ -336,8 +315,6 @@ export default function DashboardPage() {
         if (!matches) return current.filter((item) => item.id !== id)
         return upsertPrediction(current, refreshedPrediction, Math.max(HISTORY_PAGE_SIZE, paginationRef.current.page * HISTORY_PAGE_SIZE))
       })
-      if (wasMatching && !matches) setHistoryTotalCount((current) => Math.max(0, current - 1))
-      else if (!wasMatching && matches) setHistoryTotalCount((current) => current + 1)
       setSelectedHistoryItem((current) => current?.id === id ? refreshedPrediction : current)
       return true
     } catch (error) {
@@ -356,7 +333,6 @@ export default function DashboardPage() {
     paginationRef.current = { page: 0, total_pages: 0, total_count: 0 }
     setHistoryFilters(filters)
     setHistory([])
-    setHistoryTotalCount(0)
     setHistoryPagination({ page: 0, total_pages: 0, total_count: 0 })
     setHistoryError(null)
   }, [])
@@ -368,7 +344,6 @@ export default function DashboardPage() {
       <Sidebar
         onNewAnalysis={handleNewAnalysis}
         history={history}
-        historyCount={historyTotalCount}
         activeItemId={selectedHistoryItem?.id}
         onDelete={handleDeletePrediction}
         onBulkDelete={handleBulkDelete}

@@ -3028,3 +3028,56 @@ input {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* The open card menu is portalled to body to escape the scroll container. */
+.history-item.is-menu-open {
+  z-index: 80;
+  transform: none;
+  border-color: var(--profile-line-strong);
+}
+
+.history-context-menu {
+  position: fixed;
+  z-index: 10000;
+  right: auto;
+  bottom: auto;
+  width: 190px;
+  max-height: min(190px, calc(100vh - 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+}
+
+.history-context-menu button {
+  flex: 0 0 auto;
+}
+
+/* History record totals are omitted from the sidebar UI. */
+.history-mobile-count,
+.history-total-chip {
+  display: none !important;
+}
+
+.history-list-heading {
+  justify-content: flex-start;
+}
+
+.history-filter-heading {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.history-filter-heading button {
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: var(--profile-muted);
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.history-filter-heading button:hover {
+  color: var(--profile-accent);
+}

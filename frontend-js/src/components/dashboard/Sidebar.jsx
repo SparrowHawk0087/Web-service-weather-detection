@@ -42,7 +42,6 @@ function buildFilterParams(filter, query, sortMode) {
 export default function Sidebar({
   onNewAnalysis,
   history = [],
-  historyCount,
   activeItemId,
   onDelete,
   onBulkDelete,
@@ -84,7 +83,6 @@ export default function Sidebar({
   const sentinelRef = useRef(null)
   const editInputRef = useRef(null)
   const renameFinishedRef = useRef(false)
-  const count = Number.isFinite(historyCount) ? historyCount : history.length
 
   useEffect(() => {
     try { localStorage.setItem(orderKey, JSON.stringify(manualOrder)) } catch { /* optional preference */ }
@@ -112,6 +110,7 @@ export default function Sidebar({
 
   useEffect(() => {
     const handleOutside = (event) => {
+      if (event.target.closest?.('[data-history-menu="true"], [data-history-menu-trigger="true"]')) return
       if (sidebarRef.current && !sidebarRef.current.contains(event.target)) setOpenMenuId(null)
     }
     const handleKeyDown = (event) => {
@@ -261,7 +260,7 @@ export default function Sidebar({
     <>
       <button type="button" className="history-mobile-trigger" onClick={() => setIsMobileOpen(true)} aria-label="Открыть историю анализов" aria-expanded={isMobileOpen}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-        <span>История</span><span className="history-mobile-count">{count}</span>
+        <span>История</span>
       </button>
       {isMobileOpen && <button type="button" className="history-sidebar-scrim" aria-label="Закрыть историю" onClick={() => setIsMobileOpen(false)} />}
 
@@ -271,7 +270,6 @@ export default function Sidebar({
             <span className="history-avatar">{user?.name?.charAt(0).toUpperCase() || '?'}</span>
             <span className="history-user-copy">
               <span className="history-user-name">{user?.name || 'Пользователь'}</span>
-              <span className="history-user-caption">Открыть профиль и статистику</span>
             </span>
             <svg className="history-profile-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19V3" /></svg>
           </Link>
@@ -290,8 +288,7 @@ export default function Sidebar({
         </div>
 
         <div className="history-sidebar-summary">
-          <div><p className="history-section-kicker">Рабочая область</p><h2 className="history-section-title">История анализов</h2></div>
-          <span className="history-total-chip" title="Количество записей по текущему фильтру">{count}</span>
+          <h2 className="history-section-title">История анализов</h2>
         </div>
 
         <div className="history-toolbar">
@@ -301,7 +298,6 @@ export default function Sidebar({
             {query && <button type="button" onClick={() => setQuery('')} aria-label="Очистить поиск">×</button>}
           </label>
           <label className="history-sort">
-            <span>Сортировка</span>
             <select value={sortMode} onChange={(event) => { setSortMode(event.target.value); setSelectedIds(new Set()) }} aria-label="Сортировка истории">
               <option value="new">Сначала новые</option>
               <option value="manual">Вручную (загруженные)</option>
@@ -313,7 +309,7 @@ export default function Sidebar({
         </div>
 
         <div className="history-filter-section">
-          <div className="history-filter-heading"><span>Быстрые фильтры</span><button type="button" onClick={resetFilters}>Сбросить</button></div>
+          <div className="history-filter-heading"><button type="button" onClick={resetFilters}>Сбросить фильтры</button></div>
           <div className="history-filter-chips" role="group" aria-label="Фильтры истории">
             {FILTERS.map((item) => (
               <button key={item.id} type="button" className={'history-filter-chip' + (filter === item.id ? ' is-active' : '')} onClick={() => { setFilter(item.id); setSelectedIds(new Set()) }} aria-pressed={filter === item.id}>{item.label}</button>
@@ -334,10 +330,9 @@ export default function Sidebar({
 
         <div className="history-list-heading">
           <span>{FILTERS.find((item) => item.id === filter)?.label || 'Все записи'}</span>
-          <span>{history.length}{history.length < count ? ' из ' + count : ''}</span>
         </div>
 
-        <div className="history-list" ref={listRef}>
+        <div className="history-list" ref={listRef} onScroll={() => setOpenMenuId(null)}>
           {historyError ? (
             <div className="history-empty-state" role="alert">
               <strong>Не удалось загрузить историю</strong><span>{historyError}</span>

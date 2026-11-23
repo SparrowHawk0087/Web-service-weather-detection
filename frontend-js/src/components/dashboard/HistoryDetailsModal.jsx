@@ -107,7 +107,6 @@ export default function HistoryDetailsModal({
       >
         <header className="history-details-header">
           <div className="history-details-heading-copy">
-            <span className="history-section-kicker">Карточка анализа</span>
             <h2 id="history-details-title" title={title}>{title}</h2>
             <span className={'history-status-badge is-' + item.status}>
               {getPredictionStatusLabel(item.status)}

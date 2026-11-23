@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { getPredictionStatusLabel } from '../../domain/prediction'
 import { usePredictionImage } from '../../hooks/usePredictionImage'
 
@@ -52,7 +54,21 @@ export default function HistoryItem({
   onDrop,
   onDragEnd,
 }) {
+  const menuButtonRef = useRef(null)
   const imageUrl = usePredictionImage(item.image_url)
+
+  const menuAnchor = isMenuOpen ? menuButtonRef.current?.getBoundingClientRect() : null
+  const menuWidth = 190
+  const menuHeight = 164
+  const menuPosition = menuAnchor
+    ? {
+        position: 'fixed',
+        top: menuAnchor.bottom + menuHeight + 8 > window.innerHeight && menuAnchor.top > menuHeight + 8
+          ? menuAnchor.top - menuHeight - 7
+          : Math.max(8, Math.min(menuAnchor.bottom + 6, window.innerHeight - menuHeight - 8)),
+        left: Math.max(8, Math.min(window.innerWidth - menuWidth - 8, menuAnchor.right - menuWidth)),
+      }
+    : { position: 'fixed', top: 8, left: 8 }
   const weather = WEATHER[item.weather_code] || { icon: '◌', label: 'Не определено' }
   const statusClass = STATUS_CLASS[item.status] || 'is-cancelled'
   const title = item.name || item.original_filename || 'Без названия'
@@ -63,12 +79,13 @@ export default function HistoryItem({
     <article
       className={[
         'history-item',
+        isMenuOpen ? 'is-menu-open' : '',
         isActive ? 'is-active' : '',
         isPinned ? 'is-pinned' : '',
         isSelected ? 'is-selected' : '',
         isDragging ? 'is-dragging' : '',
       ].filter(Boolean).join(' ')}
-      draggable={isDraggable && !isEditing}
+      draggable={isDraggable && !isEditing && !isMenuOpen}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -121,9 +138,13 @@ export default function HistoryItem({
 
         <button
           type="button"
+          ref={menuButtonRef}
           className="history-item-menu-button"
           onClick={onMenuToggle}
+          data-history-menu-trigger="true"
           aria-label={'Действия для ' + title}
+          aria-haspopup="menu"
+          aria-controls={'history-actions-' + item.id}
           aria-expanded={isMenuOpen}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -154,15 +175,23 @@ export default function HistoryItem({
         </span>
       </button>
 
-      {isMenuOpen && (
-        <div className="history-context-menu">
-          <button type="button" onClick={onSelect}>Открыть подробности</button>
-          <button type="button" onClick={onRename}>Переименовать</button>
-          <button type="button" onClick={onFavorite}>
+      {isMenuOpen && createPortal(
+        <div
+          id={'history-actions-' + item.id}
+          className="history-context-menu"
+          style={menuPosition}
+          data-history-menu="true"
+          role="menu"
+          aria-label={'Действия для ' + title}
+        >
+          <button type="button" role="menuitem" onClick={onSelect}>Открыть подробности</button>
+          <button type="button" role="menuitem" onClick={onRename}>Переименовать</button>
+          <button type="button" role="menuitem" onClick={onFavorite}>
             {isPinned ? 'Убрать из избранного' : 'Добавить в избранное'}
           </button>
-          <button type="button" className="is-danger" onClick={onDelete}>Удалить</button>
-        </div>
+          <button type="button" role="menuitem" className="is-danger" onClick={onDelete}>Удалить</button>
+        </div>,
+        document.body,
       )}
     </article>
   )
