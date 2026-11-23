@@ -397,7 +397,7 @@ export default function Sidebar({
             </div>
           ) : (
             <>
-              {filteredHistory.map((item) => (
+              {history.map((item) => (
                 <HistoryItem
                   key={item.id}
                   item={item}
