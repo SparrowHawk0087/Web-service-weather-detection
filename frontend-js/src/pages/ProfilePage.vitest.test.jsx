@@ -178,6 +178,52 @@ describe('ProfilePage', () => {
     })
   })
 
+  it('keeps all non-activity analytics visible while a new activity period is loading', async () => {
+    let resolveActivity
+    renderPage()
+
+    expect(await screen.findByText('Weather Vision v1')).toBeTruthy()
+    profileApi.getProfileStatistics.mockReturnValueOnce(new Promise((resolve) => {
+      resolveActivity = resolve
+    }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Неделя' }))
+
+    expect(screen.getByText('Обзор активности')).toBeTruthy()
+    expect(screen.getByText('Weather Vision v1')).toBeTruthy()
+    expect(screen.getByText('87.0%')).toBeTruthy()
+    expect(screen.getByRole('list', { name: 'Количество анализов за выбранный период' }).getAttribute('aria-busy')).toBe('true')
+    expect(screen.getByRole('status', { name: 'Обновление' })).toBeTruthy()
+
+    resolveActivity({
+      ...statistics,
+      activity_period: 'week',
+      activity_offset: 0,
+      activity_range: { start_date: '2026-11-23', end_date: '2026-11-29' },
+      activity: Array.from({ length: 7 }, (_, index) => ({
+        date: new Date(Date.UTC(2026, 10, 23 + index)).toISOString().slice(0, 10),
+        count: index === 0 ? 3 : 0,
+      })),
+    })
+
+    await waitFor(() => {
+      expect(screen.getByRole('list', { name: 'Количество анализов за выбранный период' }).getAttribute('aria-busy')).toBe('false')
+    })
+  })
+
+  it('shows daily analysis volume in a visually distinct badge from the date', async () => {
+    renderPage()
+
+    await screen.findByText('Weather Vision v1')
+    const day = screen.getByRole('listitem', { name: /23 ноября 2026: 2 анализов/ })
+    const date = within(day).getByText('23')
+    const count = within(day).getByText('2')
+
+    expect(date.className).toContain('profile-activity-day')
+    expect(count.className).toContain('profile-activity-count')
+    expect(count.className).toContain('has-activity')
+  })
+
   it('does not leave the activity calendar in a loading state when the current period is reselected', async () => {
     renderPage()
 

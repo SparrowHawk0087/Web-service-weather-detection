@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const [statisticsError, setStatisticsError] = useState('')
   const [activityPeriod, setActivityPeriod] = useState('month')
   const [activityOffset, setActivityOffset] = useState(0)
+  const [activityLoading, setActivityLoading] = useState(false)
   const [statisticsRefresh, setStatisticsRefresh] = useState(0)
 
   const [savingProfile, setSavingProfile] = useState(false)
@@ -76,7 +77,10 @@ export default function ProfilePage() {
         if (active) setStatisticsError(error.message || 'Не удалось загрузить статистику.')
       })
       .finally(() => {
-        if (active) setStatisticsLoading(false)
+        if (active) {
+          setStatisticsLoading(false)
+          setActivityLoading(false)
+        }
       })
 
     return () => {
@@ -188,7 +192,7 @@ export default function ProfilePage() {
   function handleActivityPeriodChange(period) {
     if (period === activityPeriod && activityOffset === 0) return
 
-    setStatisticsLoading(true)
+    setActivityLoading(true)
     setActivityPeriod(period)
     setActivityOffset(0)
   }
@@ -196,7 +200,7 @@ export default function ProfilePage() {
   function handleActivityOffsetChange(offset) {
     if (offset === activityOffset) return
 
-    setStatisticsLoading(true)
+    setActivityLoading(true)
     setActivityOffset(offset)
   }
 
@@ -269,6 +273,7 @@ export default function ProfilePage() {
                 period={activityPeriod}
                 offset={activityOffset}
                 loading={statisticsLoading}
+                refreshing={activityLoading}
                 onPeriodChange={handleActivityPeriodChange}
                 onOffsetChange={handleActivityOffsetChange}
               />

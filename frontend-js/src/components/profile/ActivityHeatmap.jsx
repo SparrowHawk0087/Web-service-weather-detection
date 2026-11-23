@@ -53,6 +53,7 @@ export default function ActivityHeatmap({
   period = 'month',
   offset = 0,
   loading = false,
+  refreshing = false,
   onPeriodChange,
   onOffsetChange,
 }) {
@@ -62,7 +63,7 @@ export default function ActivityHeatmap({
 
   const max = data.reduce((current, item) => Math.max(current, Number(item.count || 0)), 0)
   const total = data.reduce((sum, item) => sum + Number(item.count || 0), 0)
-  const label = periodRangeLabel(period, data, range)
+  const label = refreshing ? 'Обновление…' : periodRangeLabel(period, data, range)
   const maxOffset = MAX_OFFSETS[period] || 120
   const leadingCells = period === 'month' && data[0]
     ? (dateValue(data[0].date).getDay() + 6) % 7
@@ -85,7 +86,9 @@ export default function ActivityHeatmap({
         className={`profile-activity-cell ${levels[level]}`}
       >
         <span className="profile-activity-day">{dayNumber}</span>
-        <span className="profile-activity-count">{item.count || '—'}</span>
+        <span className={`profile-activity-count ${item.count > 0 ? 'has-activity' : 'is-empty'}`}>
+          {item.count > 0 ? item.count : '·'}
+        </span>
       </div>
     )
   }
@@ -94,8 +97,14 @@ export default function ActivityHeatmap({
     <section className="profile-glass-card profile-chart-card">
       <div className="profile-heatmap-head">
         <h2 className="profile-section-title">Активность</h2>
+        {refreshing && (
+          <span className="profile-activity-refresh" role="status">
+            <span className="profile-activity-spinner" aria-hidden="true" />
+            Обновление
+          </span>
+        )}
         <div className="profile-total-chip">
-          <p className="profile-total-value">{total}</p>
+          <p className="profile-total-value">{refreshing ? '…' : total}</p>
           <p className="profile-total-label">анализов</p>
         </div>
       </div>
@@ -148,9 +157,10 @@ export default function ActivityHeatmap({
 
       {data.length ? (
         <div
-          className={`profile-activity-grid ${period === 'year' ? 'is-year' : 'is-calendar'}`}
+          className={`profile-activity-grid ${period === 'year' ? 'is-year' : 'is-calendar'} ${refreshing ? 'is-refreshing' : ''}`}
           role="list"
           aria-label="Количество анализов за выбранный период"
+          aria-busy={refreshing}
         >
           {Array.from({ length: leadingCells }, (_, index) => (
             <span key={`empty-${index}`} className="profile-activity-placeholder" aria-hidden="true" />

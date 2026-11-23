@@ -858,12 +858,12 @@ input {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 7px;
   color: var(--profile-text);
-  transition: border-color 0.2s, filter 0.2s, transform 0.2s;
+  transition: border-color 0.2s, filter 0.2s, transform 0.2s, opacity 0.2s;
 }
 
 .profile-activity-cell:hover {
@@ -877,20 +877,75 @@ input {
   overflow: hidden;
   color: var(--profile-text-2);
   font-family: "JetBrains Mono", monospace;
-  font-size: clamp(8px, 1.1vw, 11px);
-  font-weight: 650;
+  font-size: clamp(8px, 0.9vw, 10px);
+  font-weight: 550;
   line-height: 1.1;
   text-overflow: ellipsis;
   text-transform: capitalize;
 }
 
 .profile-activity-count {
-  color: var(--profile-text);
+  display: inline-flex;
+  min-width: 22px;
+  min-height: 19px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 2px 5px;
+  color: #ffffff;
   font-family: "JetBrains Mono", monospace;
-  font-size: clamp(8px, 1vw, 10px);
-  font-weight: 700;
-  line-height: 1.1;
+  font-size: clamp(9px, 1vw, 11px);
+  font-weight: 800;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+}
+
+.profile-activity-count.has-activity {
+  border-color: var(--profile-accent);
+  background: var(--profile-accent);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.profile-activity-count.is-empty {
+  min-width: 15px;
+  min-height: 14px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--profile-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.profile-activity-grid.is-refreshing {
+  opacity: 0.42;
+  filter: saturate(0.65);
+  pointer-events: none;
+}
+
+.profile-activity-refresh {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  color: var(--profile-muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.profile-activity-spinner {
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid var(--profile-line-strong);
+  border-top-color: var(--profile-accent);
+  border-radius: 50%;
+  animation: profile-activity-spin 0.7s linear infinite;
+}
+
+@keyframes profile-activity-spin {
+  to { transform: rotate(360deg); }
 }
 
 .profile-activity-placeholder {
