@@ -111,6 +111,35 @@ RSpec.describe "Predictions index", type: :request do
     expect(response.parsed_body["predictions"].first["low_confidence"]).to be(true)
   end
 
+  it "sorts by name alphabetically without DISTINCT ordering errors" do
+    alpha = create(:prediction, :completed, user: user, weather_condition: condition, name: "alpha road")
+    bravo = create(:prediction, :completed, user: user, weather_condition: condition, name: "Bravo road")
+    charlie = create(:prediction, :completed, user: user, weather_condition: condition, name: "charlie road")
+
+    get "/predictions", params: { sort: "name", direction: "asc" }, headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body["predictions"].map { |item| item["id"] })
+      .to eq([alpha.id, bravo.id, charlie.id])
+
+    get "/predictions", params: { sort: "name", direction: "desc" }, headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body["predictions"].map { |item| item["id"] })
+      .to eq([charlie.id, bravo.id, alpha.id])
+  end
+
+  it "sorts identical names by ID descending to keep pagination stable" do
+    first = create(:prediction, :completed, user: user, name: "Same road")
+    second = create(:prediction, :completed, user: user, name: "Same road")
+
+    get "/predictions", params: { sort: "name", direction: "asc" }, headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body["predictions"].map { |item| item["id"] })
+      .to eq([second.id, first.id])
+  end
+
   it "sorts by confidence in the requested direction with stable tie-breaking" do
     low = create(:prediction, :completed, user: user, confidence: 0.4)
     high = create(:prediction, :completed, user: user, confidence: 0.95)

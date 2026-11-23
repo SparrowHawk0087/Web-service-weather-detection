@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 import HistoryItem from './HistoryItem'
@@ -14,15 +14,6 @@ const FILTERS = [
   { id: 'SNOW', label: 'Снег' },
   { id: 'CLEAR', label: 'Ясно' },
 ]
-
-function readStoredOrder(key) {
-  try {
-    const value = JSON.parse(localStorage.getItem(key) || '[]')
-    return Array.isArray(value) ? value : []
-  } catch {
-    return []
-  }
-}
 
 function buildFilterParams(filter, query, sortMode) {
   const params = { q: query || undefined }
@@ -58,14 +49,12 @@ export default function Sidebar({
 }) {
   const { user } = useAuth()
   const userKey = String(user?.id || user?.email || 'current')
-  const orderKey = 'fsr-history-order:' + userKey
   const collapsedKey = 'fsr-history-collapsed:' + userKey
 
   const [filter, setFilter] = useState('all')
   const [sortMode, setSortMode] = useState('new')
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [manualOrder, setManualOrder] = useState(() => readStoredOrder(orderKey))
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [openMenuId, setOpenMenuId] = useState(null)
   const [editingId, setEditingId] = useState(null)
@@ -74,18 +63,14 @@ export default function Sidebar({
     try { return localStorage.getItem(collapsedKey) === 'true' } catch { return false }
   })
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [draggedId, setDraggedId] = useState(null)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [bulkFavoriteAction, setBulkFavoriteAction] = useState(null)
+  const [isFiltersExpanded, setIsFiltersExpanded] = useState(true)
 
   const listRef = useRef(null)
   const sentinelRef = useRef(null)
   const editInputRef = useRef(null)
   const renameFinishedRef = useRef(false)
-
-  useEffect(() => {
-    try { localStorage.setItem(orderKey, JSON.stringify(manualOrder)) } catch { /* optional preference */ }
-  }, [orderKey, manualOrder])
 
   useEffect(() => {
     try { localStorage.setItem(collapsedKey, String(isCollapsed)) } catch { /* optional preference */ }
@@ -140,15 +125,6 @@ export default function Sidebar({
     observer.observe(target)
     return () => observer.disconnect()
   }, [hasMore, isLoadingMore, onLoadMore, history.length])
-
-  const filteredHistory = useMemo(() => {
-    if (sortMode !== 'manual') return history
-    const positions = new Map(manualOrder.map((id, index) => [id, index]))
-    return [...history].sort((left, right) => (
-      (positions.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
-      (positions.get(right.id) ?? Number.MAX_SAFE_INTEGER)
-    ))
-  }, [history, manualOrder, sortMode])
 
   const selectedItems = history.filter((item) => selectedIds.has(item.id))
   const hasSelectedFavorites = selectedItems.some((item) => item.is_favorite === true)
@@ -230,27 +206,6 @@ export default function Sidebar({
     }
   }
 
-  const handleDragStart = (event, id) => {
-    if (sortMode !== 'manual') return
-    setDraggedId(id)
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', String(id))
-  }
-
-  const handleDrop = (event, targetId) => {
-    event.preventDefault()
-    if (draggedId === null || draggedId === targetId) return
-    const ids = filteredHistory.map((item) => item.id)
-    const from = ids.indexOf(draggedId)
-    const to = ids.indexOf(targetId)
-    if (from < 0 || to < 0) return
-    ids.splice(from, 1)
-    ids.splice(to, 0, draggedId)
-    setManualOrder([...ids, ...manualOrder.filter((id) => !ids.includes(id))])
-    setSortMode('manual')
-    setDraggedId(null)
-  }
-
   const handleSelect = (item) => {
     onSelect?.(item)
     setOpenMenuId(null)
@@ -264,6 +219,8 @@ export default function Sidebar({
     setSelectedIds(new Set())
     setOpenMenuId(null)
   }
+
+  const activeFilterLabel = FILTERS.find((item) => item.id === filter)?.label || 'Все'
 
   const sidebarClasses = [
     'history-sidebar',
@@ -326,7 +283,6 @@ export default function Sidebar({
           <label className="history-sort">
             <select value={sortMode} onChange={(event) => { setSortMode(event.target.value); setSelectedIds(new Set()); setOpenMenuId(null) }} aria-label="Сортировка истории">
               <option value="new">Сначала новые</option>
-              <option value="manual">Вручную (загруженные)</option>
               <option value="name">По имени</option>
               <option value="confidence">По уверенности</option>
             </select>
@@ -334,14 +290,49 @@ export default function Sidebar({
           </label>
         </div>
 
-        <div className="history-filter-section">
-          <div className="history-filter-heading"><button type="button" onClick={resetFilters}>Сбросить фильтры</button></div>
-          <div className="history-filter-chips" role="group" aria-label="Фильтры истории">
-            {FILTERS.map((item) => (
-              <button key={item.id} type="button" className={'history-filter-chip' + (filter === item.id ? ' is-active' : '')} onClick={() => { setFilter(item.id); setSelectedIds(new Set()); setOpenMenuId(null) }} aria-pressed={filter === item.id}>{item.label}</button>
-            ))}
-          </div>
-        </div>
+        <section className="history-filter-section" aria-label="Фильтры истории">
+          <button
+            type="button"
+            className="history-filter-accordion-trigger"
+            onClick={() => setIsFiltersExpanded((expanded) => !expanded)}
+            aria-expanded={isFiltersExpanded}
+            aria-controls="history-filter-content"
+          >
+            <span className="history-filter-accordion-title">Фильтры</span>
+            <span className="history-filter-accordion-current">{activeFilterLabel}</span>
+            <svg
+              className={isFiltersExpanded ? 'is-expanded' : ''}
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="m7 10 5 5 5-5" />
+            </svg>
+          </button>
+          {isFiltersExpanded && (
+            <div id="history-filter-content" className="history-filter-content">
+              <div className="history-filter-heading">
+                <button type="button" onClick={resetFilters}>Сбросить фильтры</button>
+              </div>
+              <div className="history-filter-chips" role="group" aria-label="Фильтры истории">
+                {FILTERS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={'history-filter-chip' + (filter === item.id ? ' is-active' : '')}
+                    onClick={() => {
+                      setFilter(item.id)
+                      setSelectedIds(new Set())
+                      setOpenMenuId(null)
+                    }}
+                    aria-pressed={filter === item.id}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
 
         {selectedIds.size > 0 && (
           <div className="history-bulk-toolbar" aria-live="polite">
@@ -417,8 +408,6 @@ export default function Sidebar({
                   editingValue={editingValue}
                   editInputRef={editingId === item.id ? editInputRef : null}
                   isMenuOpen={openMenuId === item.id}
-                  isDraggable={sortMode === 'manual'}
-                  isDragging={draggedId === item.id}
                   onSelect={() => handleSelect(item)}
                   onToggleSelected={() => toggleSelected(item.id)}
                   onEditingChange={setEditingValue}
@@ -427,10 +416,6 @@ export default function Sidebar({
                   onRename={() => startRename(item)}
                   onFavorite={async () => { await onToggleFavorite?.(item); setOpenMenuId(null) }}
                   onDelete={() => handleDelete(item)}
-                  onDragStart={(event) => handleDragStart(event, item.id)}
-                  onDragOver={(event) => { if (sortMode === 'manual' && draggedId !== null) event.preventDefault() }}
-                  onDrop={(event) => handleDrop(event, item.id)}
-                  onDragEnd={() => setDraggedId(null)}
                 />
               ))}
               {hasMore && (

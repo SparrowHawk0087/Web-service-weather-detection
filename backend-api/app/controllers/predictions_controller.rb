@@ -348,7 +348,11 @@ class PredictionsController < ApplicationController
 
     case params[:sort].to_s
     when "name"
-      scope.order(Arel.sql("LOWER(predictions.name) #{direction} NULLS LAST"))
+      # PostgreSQL requires ORDER BY expressions to be selected when DISTINCT
+      # is used with joined translations. Keep case-insensitive sorting by
+      # selecting the normalized value as an alias before ordering by it.
+      scope.select("predictions.*, LOWER(predictions.name) AS normalized_name")
+           .order(Arel.sql("normalized_name #{direction} NULLS LAST"))
            .order(id: :desc)
     when "confidence"
       scope.order(Arel.sql("predictions.confidence #{direction} NULLS LAST"))

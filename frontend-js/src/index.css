@@ -3704,3 +3704,100 @@ input {
     margin-inline: 12px;
   }
 }
+
+
+/* Filter accordion: the entire title row is the disclosure control. */
+.history-filter-accordion-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--profile-line);
+  border-radius: 11px;
+  padding: 8px 11px;
+  background: var(--profile-item);
+  color: var(--profile-text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s, background .18s, box-shadow .18s;
+}
+
+.history-filter-accordion-trigger:hover {
+  border-color: var(--profile-line-strong);
+  background: var(--profile-item-hover);
+}
+
+.history-filter-accordion-trigger:focus-visible {
+  outline: 2px solid var(--profile-accent);
+  outline-offset: 2px;
+}
+
+.history-filter-accordion-title {
+  flex: 1 1 auto;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.history-filter-accordion-current {
+  display: inline-flex;
+  min-height: 22px;
+  max-width: 138px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--profile-line);
+  border-radius: 7px;
+  padding: 3px 7px;
+  background: var(--profile-accent-soft);
+  color: var(--profile-text-2);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-filter-accordion-trigger > svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: var(--profile-muted);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  transition: transform .2s ease;
+}
+
+.history-filter-accordion-trigger > svg.is-expanded {
+  transform: rotate(180deg);
+}
+
+.history-filter-content {
+  padding-top: 8px;
+  animation: history-filter-reveal .18s ease-out;
+}
+
+.history-filter-content .history-filter-heading {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 20px;
+  margin: 0 0 6px;
+}
+
+.history-filter-content .history-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@keyframes history-filter-reveal {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .history-filter-content { animation: none; }
+}

@@ -127,6 +127,30 @@ describe('History sidebar actions menu', () => {
     })).toBeTruthy()
   })
 
+  it('toggles the filter accordion from the full header row', async () => {
+    const user = userEvent.setup()
+    renderSidebar()
+
+    const accordion = screen.getByRole('button', { name: /Фильтры Все/ })
+    expect(accordion.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByRole('group', { name: 'Фильтры истории' })).toBeTruthy()
+
+    await user.click(accordion)
+    expect(accordion.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByRole('group', { name: 'Фильтры истории' })).toBeNull()
+
+    await user.click(accordion)
+    expect(accordion.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByRole('group', { name: 'Фильтры истории' })).toBeTruthy()
+  })
+
+  it('does not expose manual sorting as an available option', () => {
+    renderSidebar()
+
+    const sortSelect = screen.getByRole('combobox', { name: 'Сортировка истории' })
+    expect(within(sortSelect).queryByRole('option', { name: 'Вручную (загруженные)' })).toBeNull()
+  })
+
   it('centers the compact New Analysis action in collapsed mode', () => {
     window.localStorage.setItem('fsr-history-collapsed:7', 'true')
     const { unmount } = renderSidebar()
