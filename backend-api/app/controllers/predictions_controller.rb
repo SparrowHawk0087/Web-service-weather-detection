@@ -1,6 +1,37 @@
 class PredictionsController < ApplicationController
   before_action :authenticate_request,
-                only: [:create, :index, :show, :analyze, :enqueue, :update, :destroy, :clear_history]
+                only: [:create, :index, :show, :image, :favorite, :analyze, :enqueue, :update, :destroy, :bulk, :clear_history]
+
+  # DELETE /predictions/bulk
+  # Validate the complete selection before changing any record.
+  def bulk
+    raw_ids = params[:ids]
+    unless raw_ids.is_a?(Array) && raw_ids.any? && raw_ids.size <= 100
+      return render_api_error(
+        "INVALID_PREDICTION_IDS",
+        "Provide between 1 and 100 prediction IDs",
+        status: :unprocessable_entity
+      )
+    end
+
+    ids = raw_ids.map { |value| Integer(value.to_s, 10) }
+    if ids.any?(&:negative?) || ids.any?(&:zero?) || ids.uniq.size != ids.size
+      return render_api_error(
+        "INVALID_PREDICTION_IDS",
+        "Prediction IDs must be unique positive integers",
+        status: :unprocessable_entity
+      )
+    end
+
+    result = PredictionBulkDeletionService.new(current_user, ids).call
+    render json: { status: "success", deleted_count: result.fetch(:deleted_count) }
+  rescue ArgumentError, TypeError
+    render_api_error(
+      "INVALID_PREDICTION_IDS",
+      "Prediction IDs must be unique positive integers",
+      status: :unprocessable_entity
+    )
+  end
 
   # DELETE /predictions/clear
   def clear_history
@@ -12,6 +43,45 @@ class PredictionsController < ApplicationController
       "Analysis history was hidden, but media cleanup could not be scheduled",
       status: :service_unavailable
     )
+  end
+
+  # GET /predictions/:id/image
+  # Uploaded prediction media is private and only available to its owner.
+  def image
+    prediction = current_user.predictions.where(deleted_at: nil).find(params[:id])
+    return image_not_found if prediction.image_deleted_at.present? || prediction.storage_key.blank?
+
+    image_path = PredictionImageStorage.path_for(prediction.storage_key)
+    return image_not_found unless File.file?(image_path)
+
+    content_type = {
+      ".jpg" => "image/jpeg",
+      ".jpeg" => "image/jpeg",
+      ".png" => "image/png",
+      ".webp" => "image/webp"
+    }[File.extname(prediction.storage_key).downcase]
+    return image_not_found unless content_type
+
+    send_file(
+      image_path,
+      filename: File.basename(prediction.original_filename.presence || prediction.storage_key),
+      type: content_type,
+      disposition: "inline"
+    )
+  rescue PredictionImageStorage::MissingImage
+    image_not_found
+  end
+
+  # PUT/DELETE /predictions/:id/favorite
+  def favorite
+    prediction = current_user.predictions.where(deleted_at: nil).find(params[:id])
+    if request.put?
+      current_user.favorites.find_or_create_by!(prediction: prediction)
+      render json: { is_favorite: true }
+    else
+      current_user.favorites.where(prediction_id: prediction.id).destroy_all
+      render json: { is_favorite: false }
+    end
   end
 
   # POST /predictions/analyze
@@ -170,15 +240,17 @@ class PredictionsController < ApplicationController
   end
 
   # GET /predictions
+  # Search, filters, and sort are applied before pagination, across all records.
   def index
     page = positive_integer_param(:page, default: 1)
     per_page = [positive_integer_param(:per_page, default: 20), 100].min
-    scope = current_user.predictions
-                        .where(deleted_at: nil)
-                        .recent
-                        .includes(weather_condition: :translations)
-    total_count = scope.count
-    predictions = scope.offset((page - 1) * per_page).limit(per_page)
+    scope = filtered_predictions_scope
+    total_count = scope.distinct.count(:id)
+    predictions = apply_prediction_sort(scope)
+                    .distinct
+                    .includes(:favorites, weather_condition: :translations)
+                    .offset((page - 1) * per_page)
+                    .limit(per_page)
 
     render json: {
       predictions: predictions.map { |prediction| serialize_prediction(prediction) },
@@ -195,7 +267,7 @@ class PredictionsController < ApplicationController
   def show
     prediction = current_user.predictions
                              .where(deleted_at: nil)
-                             .includes(weather_condition: :translations)
+                             .includes(:favorites, weather_condition: :translations)
                              .find(params[:id])
     render json: { prediction: serialize_prediction(prediction) }
   end
@@ -220,10 +292,81 @@ class PredictionsController < ApplicationController
 
   private
 
+  def image_not_found
+    render_api_error("IMAGE_NOT_FOUND", "The requested image is unavailable", status: :not_found)
+  end
+
+  def filtered_predictions_scope
+    scope = current_user.predictions
+                        .where(deleted_at: nil)
+                        .left_joins(weather_condition: :translations)
+
+    statuses = Array(params[:status])
+                 .flat_map { |value| value.to_s.split(",") }
+                 .map(&:strip)
+                 .select { |value| Prediction::STATUSES.include?(value) }
+    scope = scope.where(status: statuses) if statuses.any?
+
+    weather_code = params[:weather_code].to_s.strip.upcase
+    scope = scope.where(weather_conditions: { code: weather_code }) if weather_code.match?(/\A[A-Z_]+\z/)
+
+    if params[:q].present?
+      term = "%#{ActiveRecord::Base.sanitize_sql_like(params[:q].to_s.strip)}%"
+      scope = scope.where(
+        "predictions.name ILIKE :term " \
+        "OR predictions.original_filename ILIKE :term " \
+        "OR predictions.ml_model_version ILIKE :term " \
+        "OR weather_conditions.code ILIKE :term " \
+        "OR weather_condition_translations.name ILIKE :term",
+        term: term
+      )
+    end
+
+    if params.key?(:favorite)
+      favorite_ids = current_user.favorites.select(:prediction_id)
+      scope = ActiveModel::Type::Boolean.new.cast(params[:favorite]) \
+        ? scope.where(id: favorite_ids)
+        : scope.where.not(id: favorite_ids)
+    end
+
+    if ActiveModel::Type::Boolean.new.cast(params[:low_confidence])
+      scope = scope.where.not(predictions: { confidence: nil })
+                   .where("predictions.confidence < weather_conditions.min_confidence")
+    end
+
+    minimum_confidence = Float(params[:min_confidence], exception: false)
+    if minimum_confidence&.between?(0.0, 1.0)
+      scope = scope.where("predictions.confidence >= ?", minimum_confidence)
+    end
+
+    scope
+  end
+
+  def apply_prediction_sort(scope)
+    direction = params[:direction].to_s.downcase
+    direction = %w[asc desc].include?(direction) ? direction : "desc"
+
+    case params[:sort].to_s
+    when "name"
+      # PostgreSQL requires ORDER BY expressions to be selected when DISTINCT
+      # is used with joined translations. Keep case-insensitive sorting by
+      # selecting the normalized value as an alias before ordering by it.
+      scope.select("predictions.*, LOWER(predictions.name) AS normalized_name")
+           .order(Arel.sql("normalized_name #{direction} NULLS LAST"))
+           .order(id: :desc)
+    when "confidence"
+      scope.order(Arel.sql("predictions.confidence #{direction} NULLS LAST"))
+           .order(id: :desc)
+    else
+      scope.order(created_at: direction.to_sym, id: direction.to_sym)
+    end
+  end
+
   def serialize_prediction(prediction)
     PredictionSerializer.new(
       prediction,
-      locale: current_user.locale.presence || "ru"
+      locale: current_user.locale.presence || "ru",
+      user: current_user
     ).as_json
   end
 

@@ -62,6 +62,94 @@ RSpec.describe "Predictions index", type: :request do
     expect(response.parsed_body.dig("pagination", "per_page")).to eq(100)
   end
 
+  it "searches filename and name across the complete history before pagination" do
+    create(
+      :prediction,
+      :completed,
+      user: user,
+      weather_condition: condition,
+      name: "Северная трасса",
+      original_filename: "highway-frame-08.jpg"
+    )
+    21.times { |index| create(:prediction, user: user, name: "Другое #{index}") }
+
+    get "/predictions",
+        params: { q: "highway-frame-08", page: 1, per_page: 10 },
+        headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body["predictions"].map { |item| item["original_filename"] })
+      .to eq(["highway-frame-08.jpg"])
+    expect(response.parsed_body.dig("pagination", "total_count")).to eq(1)
+  end
+
+  it "filters by status, weather code, favorites, and minimum confidence" do
+    rain = create(:prediction, :completed, user: user, weather_condition: condition, confidence: 0.9)
+    Favorite.create!(user: user, prediction: rain)
+    create(:prediction, user: user, status: "pending")
+
+    get "/predictions",
+        params: { status: "completed", weather_code: "RAIN", favorite: true },
+        headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body["predictions"].map { |item| item["id"] }).to eq([rain.id])
+    expect(response.parsed_body["predictions"].first["is_favorite"]).to be(true)
+
+    get "/predictions", params: { min_confidence: "0.95" }, headers: headers
+    expect(response.parsed_body["predictions"]).to be_empty
+  end
+
+  it "filters low-confidence predictions using the threshold of their weather class" do
+    low = create(:prediction, :completed, user: user, weather_condition: condition, confidence: 0.4)
+    create(:prediction, :completed, user: user, weather_condition: condition, confidence: 0.9)
+
+    get "/predictions", params: { low_confidence: true }, headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body["predictions"].map { |item| item["id"] }).to eq([low.id])
+    expect(response.parsed_body["predictions"].first["low_confidence"]).to be(true)
+  end
+
+  it "sorts by name alphabetically without DISTINCT ordering errors" do
+    alpha = create(:prediction, :completed, user: user, weather_condition: condition, name: "alpha road")
+    bravo = create(:prediction, :completed, user: user, weather_condition: condition, name: "Bravo road")
+    charlie = create(:prediction, :completed, user: user, weather_condition: condition, name: "charlie road")
+
+    get "/predictions", params: { sort: "name", direction: "asc" }, headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body["predictions"].map { |item| item["id"] })
+      .to eq([alpha.id, bravo.id, charlie.id])
+
+    get "/predictions", params: { sort: "name", direction: "desc" }, headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body["predictions"].map { |item| item["id"] })
+      .to eq([charlie.id, bravo.id, alpha.id])
+  end
+
+  it "sorts identical names by ID descending to keep pagination stable" do
+    first = create(:prediction, :completed, user: user, name: "Same road")
+    second = create(:prediction, :completed, user: user, name: "Same road")
+
+    get "/predictions", params: { sort: "name", direction: "asc" }, headers: headers
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body["predictions"].map { |item| item["id"] })
+      .to eq([second.id, first.id])
+  end
+
+  it "sorts by confidence in the requested direction with stable tie-breaking" do
+    low = create(:prediction, :completed, user: user, confidence: 0.4)
+    high = create(:prediction, :completed, user: user, confidence: 0.95)
+
+    get "/predictions", params: { sort: "confidence", direction: "asc" }, headers: headers
+
+    expect(response.parsed_body["predictions"].first["id"]).to eq(low.id)
+    expect(response.parsed_body["predictions"].last["id"]).to eq(high.id)
+  end
+
   it "returns the top probability code when the condition is missing" do
     create(
       :prediction,

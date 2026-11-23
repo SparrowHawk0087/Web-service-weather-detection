@@ -5,7 +5,8 @@ class PredictionStatusBroadcaster
 
     payload = PredictionSerializer.new(
       prediction,
-      locale: user.locale.presence || "ru"
+      locale: user.locale.presence || "ru",
+      user: user
     ).as_json
 
     ActionCable.server.broadcast(

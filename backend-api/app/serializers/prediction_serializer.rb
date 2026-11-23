@@ -9,9 +9,10 @@ class PredictionSerializer
     ".zip" => "application/zip"
   }.freeze
 
-  def initialize(prediction, locale: I18n.locale)
+  def initialize(prediction, locale: I18n.locale, user: nil)
     @prediction = prediction
     @locale = locale
+    @user = user
   end
 
   def as_json(*)
@@ -34,6 +35,8 @@ class PredictionSerializer
       ml_service_version: prediction.ml_service_version,
       original_filename: safe_original_filename,
       processing_duration_ms: prediction.processing_duration_ms,
+      is_favorite: user ? prediction.favorites.any? { |favorite| favorite.user_id == user.id } : false,
+      low_confidence: prediction.low_confidence?,
       error_code: prediction.error_code,
       created_at: iso8601_utc(prediction.created_at),
       finished_at: iso8601_utc(prediction.finished_at),
@@ -45,7 +48,7 @@ class PredictionSerializer
 
   private
 
-  attr_reader :prediction, :locale
+  attr_reader :prediction, :locale, :user
 
   def normalized_probabilities
     probabilities = prediction.class_probabilities

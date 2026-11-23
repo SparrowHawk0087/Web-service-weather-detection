@@ -10,16 +10,37 @@ export async function enqueuePrediction(file, modelId = 'vision-v1', name = '') 
   return response.data
 }
 
-export async function getPredictions({ page = 1, perPage = 20 } = {}) {
-  const response = await apiClient.get('/predictions', {
-    params: { page, per_page: perPage },
-  })
+export async function getPredictions({
+  page = 1, perPage = 20, q, status, weatherCode, favorite,
+  lowConfidence, minConfidence, sort, direction,
+} = {}) {
+  const params = { page, per_page: perPage }
+  if (q) params.q = q
+  if (status) params.status = status
+  if (weatherCode) params.weather_code = weatherCode
+  if (typeof favorite === 'boolean') params.favorite = favorite
+  if (typeof lowConfidence === 'boolean') params.low_confidence = lowConfidence
+  if (typeof minConfidence === 'number') params.min_confidence = minConfidence
+  if (sort) params.sort = sort
+  if (direction) params.direction = direction
+
+  const response = await apiClient.get('/predictions', { params })
   return response.data
 }
 
 export async function getPrediction(id) {
-  const response = await apiClient.get(`/predictions/${id}`)
+  const response = await apiClient.get('/predictions/' + id)
   return response.data.prediction
+}
+
+export async function addPredictionFavorite(id) {
+  const response = await apiClient.put('/predictions/' + id + '/favorite')
+  return response.data
+}
+
+export async function removePredictionFavorite(id) {
+  const response = await apiClient.delete('/predictions/' + id + '/favorite')
+  return response.data
 }
 
 export async function analyzePrediction(file, modelId = 'vision-v1') {
@@ -32,10 +53,15 @@ export async function analyzePrediction(file, modelId = 'vision-v1') {
 }
 
 export async function deletePrediction(id) {
-  await apiClient.delete(`/predictions/${id}`)
+  await apiClient.delete('/predictions/' + id)
+}
+
+export async function bulkDeletePredictions(ids) {
+  const response = await apiClient.delete('/predictions/bulk', { data: { ids } })
+  return response.data
 }
 
 export async function renamePrediction(id, name) {
-  const response = await apiClient.patch(`/predictions/${id}`, { name })
+  const response = await apiClient.patch('/predictions/' + id, { name })
   return response.data
 }
