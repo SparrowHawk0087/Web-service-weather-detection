@@ -60,6 +60,7 @@ Rails.application.routes.draw do
 
     collection do
       post :analyze
+      delete :bulk
     end
   end
 
