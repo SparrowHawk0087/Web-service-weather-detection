@@ -98,7 +98,7 @@ describe('ProfilePage', () => {
     renderPage()
 
     expect(await screen.findByText('Обзор активности')).toBeTruthy()
-    expect(screen.getByText('12')).toBeTruthy()
+    expect(screen.getByText('12', { selector: '.profile-metric-card .profile-metric-value' })).toBeTruthy()
     expect(screen.getByText('87.0%')).toBeTruthy()
     expect(screen.getByText('Туман')).toBeTruthy()
     expect(screen.getByText('Ясно')).toBeTruthy()
