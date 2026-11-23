@@ -9,6 +9,8 @@ import {
   deletePrediction,
   renamePrediction,
   getPredictions,
+  addPredictionFavorite,
+  removePredictionFavorite,
 } from '../api/predictions'
 import {
   isIncomingPredictionNewer,
@@ -29,12 +31,15 @@ export default function DashboardPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [requestError, setRequestError] = useState(null)
   const [history, setHistory] = useState([])
+  const [historyTotalCount, setHistoryTotalCount] = useState(0)
   const [activePredictionId, setActivePredictionId] = useState(null)
 
   const loadHistory = useCallback(async () => {
     try {
       const response = await getPredictions({ page: 1, perPage: HISTORY_PAGE_SIZE })
       setHistory((current) => mergePredictionHistory(current, response.predictions || []))
+
+      setHistoryTotalCount(response.pagination?.total_count ?? response.predictions?.length ?? 0)
     } catch (error) {
       console.error('Failed to load prediction history:', error)
     }
@@ -61,6 +66,8 @@ export default function DashboardPage() {
       .then((response) => {
         if (active) {
           setHistory((current) => mergePredictionHistory(current, response.predictions || []))
+
+          setHistoryTotalCount(response.pagination?.total_count ?? response.predictions?.length ?? 0)
         }
       })
       .catch((error) => {
@@ -115,6 +122,7 @@ export default function DashboardPage() {
 
       setActivePredictionId(queuedPrediction.id)
       setHistory((current) => upsertPrediction(current, queuedPrediction, HISTORY_PAGE_SIZE))
+      setHistoryTotalCount((current) => current + 1)
       setIsSubmitting(false)
 
       // Refresh after HTTP 202 to close the race where the final WS event arrives
@@ -138,10 +146,28 @@ export default function DashboardPage() {
     try {
       await deletePrediction(id)
       setHistory((current) => current.filter((item) => item.id !== id))
+      setHistoryTotalCount((current) => Math.max(0, current - 1))
       if (selectedHistoryItem?.id === id) setSelectedHistoryItem(null)
       if (activePredictionId === id) setActivePredictionId(null)
+      return true
     } catch (error) {
       setRequestError(error.message || 'Не удалось удалить анализ')
+      return false
+    }
+  }
+
+  const handleToggleFavorite = async (item) => {
+    try {
+      const result = item.is_favorite
+        ? await removePredictionFavorite(item.id)
+        : await addPredictionFavorite(item.id)
+      const updated = { ...item, is_favorite: result.is_favorite }
+      setHistory((current) => current.map((record) => record.id === item.id ? updated : record))
+      setSelectedHistoryItem((current) => current?.id === item.id ? updated : current)
+      return true
+    } catch (error) {
+      setRequestError(error.message || 'Не удалось обновить избранное')
+      return false
     }
   }
 
@@ -159,6 +185,7 @@ export default function DashboardPage() {
       setSelectedHistoryItem((current) => (
         current?.id === id ? refreshedPrediction : current
       ))
+      return true
     } catch (error) {
       setRequestError(error.message || 'Не удалось переименовать анализ')
     }
@@ -174,8 +201,11 @@ export default function DashboardPage() {
       <Sidebar
         onNewAnalysis={handleNewAnalysis}
         history={history}
+        historyCount={historyTotalCount}
+        activeItemId={selectedHistoryItem?.id}
         onDelete={handleDeletePrediction}
         onRename={handleRenamePrediction}
+        onToggleFavorite={handleToggleFavorite}
         onSelect={setSelectedHistoryItem}
       />
 

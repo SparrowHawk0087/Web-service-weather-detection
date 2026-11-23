@@ -22,15 +22,6 @@ const WEATHER_LABELS = {
   CLEAR: 'Ясно',
 }
 
-function readStoredSet(key) {
-  try {
-    const value = JSON.parse(localStorage.getItem(key) || '[]')
-    return new Set(Array.isArray(value) ? value : [])
-  } catch {
-    return new Set()
-  }
-}
-
 function readStoredOrder(key) {
   try {
     const value = JSON.parse(localStorage.getItem(key) || '[]')
@@ -38,20 +29,6 @@ function readStoredOrder(key) {
   } catch {
     return []
   }
-}
-
-function formatTimestamp(value) {
-  if (!value) return 'Дата неизвестна'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Дата неизвестна'
-
-  return date.toLocaleString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 function getSearchableText(item) {
@@ -72,18 +49,17 @@ export default function Sidebar({
   activeItemId,
   onDelete,
   onRename,
+  onToggleFavorite,
   onSelect,
 }) {
   const { user } = useAuth()
   const userKey = String(user?.id || user?.email || 'user')
-  const favoritesKey = 'fsr-history-favorites:' + userKey
   const orderKey = 'fsr-history-order:' + userKey
   const collapsedKey = 'fsr-history-collapsed:' + userKey
 
   const [filter, setFilter] = useState('all')
   const [sortMode, setSortMode] = useState('new')
   const [query, setQuery] = useState('')
-  const [pinnedIds, setPinnedIds] = useState(() => readStoredSet(favoritesKey))
   const [manualOrder, setManualOrder] = useState(() => readStoredOrder(orderKey))
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [openMenuId, setOpenMenuId] = useState(null)
@@ -105,7 +81,6 @@ export default function Sidebar({
   const editInputRef = useRef(null)
 
   useEffect(() => {
-    setPinnedIds(readStoredSet(favoritesKey))
     setManualOrder(readStoredOrder(orderKey))
     try {
       setIsCollapsed(localStorage.getItem(collapsedKey) === 'true')
@@ -115,15 +90,7 @@ export default function Sidebar({
     setSelectedIds(new Set())
     setQuery('')
     setFilter('all')
-  }, [favoritesKey, orderKey, collapsedKey])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(favoritesKey, JSON.stringify([...pinnedIds]))
-    } catch {
-      // The history remains usable when browser storage is unavailable.
-    }
-  }, [favoritesKey, pinnedIds])
+  }, [orderKey, collapsedKey])
 
   useEffect(() => {
     try {
@@ -176,21 +143,13 @@ export default function Sidebar({
   const initial = user?.name?.charAt(0).toUpperCase() || '?'
   const count = Number.isFinite(historyCount) ? historyCount : history.length
 
-  const isPinned = (item) => (
-    typeof item.is_favorite === 'boolean'
-      ? item.is_favorite
-      : pinnedIds.has(item.id)
-  )
+  const isPinned = (item) => item.is_favorite === true
 
   const filteredHistory = useMemo(() => {
     let items = [...history]
 
     if (filter === 'pinned') {
-      items = items.filter((item) => (
-        typeof item.is_favorite === 'boolean'
-          ? item.is_favorite
-          : pinnedIds.has(item.id)
-      ))
+      items = items.filter((item) => item.is_favorite === true)
     } else if (filter === 'errors') {
       items = items.filter((item) => item.status === 'failed')
     } else if (filter === 'processing') {
@@ -231,16 +190,11 @@ export default function Sidebar({
     }
 
     return items
-  }, [filter, history, manualOrder, pinnedIds, query, sortMode])
+  }, [filter, history, manualOrder, query, sortMode])
 
-  const toggleFavorite = (item) => {
-    setPinnedIds((current) => {
-      const next = new Set(current)
-      if (isPinned(item)) next.delete(item.id)
-      else next.add(item.id)
-      return next
-    })
+  const toggleFavorite = async (item) => {
     setOpenMenuId(null)
+    await onToggleFavorite?.(item)
   }
 
   const toggleSelected = (id) => {
@@ -281,13 +235,9 @@ export default function Sidebar({
     if (!onDelete || !window.confirm('Удалить «' + label + '» из истории?')) return
 
     try {
-      await onDelete(item.id)
+      const deleted = await onDelete(item.id)
+      if (!deleted) return
       setSelectedIds((current) => {
-        const next = new Set(current)
-        next.delete(item.id)
-        return next
-      })
-      setPinnedIds((current) => {
         const next = new Set(current)
         next.delete(item.id)
         return next
@@ -314,20 +264,12 @@ export default function Sidebar({
       removedIds.forEach((id) => next.delete(id))
       return next
     })
-    setPinnedIds((current) => {
-      const next = new Set(current)
-      removedIds.forEach((id) => next.delete(id))
-      return next
-    })
     setIsBulkDeleting(false)
   }
 
-  const handleBulkPin = () => {
-    setPinnedIds((current) => {
-      const next = new Set(current)
-      selectedIds.forEach((id) => next.add(id))
-      return next
-    })
+  const handleBulkPin = async () => {
+    const targets = history.filter((item) => selectedIds.has(item.id) && !item.is_favorite)
+    await Promise.allSettled(targets.map((item) => onToggleFavorite?.(item)))
     setSelectedIds(new Set())
   }
 

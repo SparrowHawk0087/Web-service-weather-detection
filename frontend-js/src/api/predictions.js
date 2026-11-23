@@ -22,6 +22,16 @@ export async function getPrediction(id) {
   return response.data.prediction
 }
 
+export async function addPredictionFavorite(id) {
+  const response = await apiClient.put('/predictions/' + id + '/favorite')
+  return response.data
+}
+
+export async function removePredictionFavorite(id) {
+  const response = await apiClient.delete('/predictions/' + id + '/favorite')
+  return response.data
+}
+
 export async function analyzePrediction(file, modelId = 'vision-v1') {
   const formData = new FormData()
   formData.append('file', file)

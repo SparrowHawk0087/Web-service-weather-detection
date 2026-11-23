@@ -52,6 +52,12 @@ Rails.application.routes.draw do
   mount Sidekiq::Web => "/sidekiq"
 
   resources :predictions, only: [:index, :show, :create, :update, :destroy] do
+    member do
+      get :image
+      put :favorite
+      delete :favorite
+    end
+
     collection do
       post :analyze
     end

@@ -1,6 +1,6 @@
 class PredictionsController < ApplicationController
   before_action :authenticate_request,
-                only: [:create, :index, :show, :analyze, :enqueue, :update, :destroy, :clear_history]
+                only: [:create, :index, :show, :image, :favorite, :analyze, :enqueue, :update, :destroy, :clear_history]
 
   # DELETE /predictions/clear
   def clear_history
@@ -12,6 +12,45 @@ class PredictionsController < ApplicationController
       "Analysis history was hidden, but media cleanup could not be scheduled",
       status: :service_unavailable
     )
+  end
+
+  # GET /predictions/:id/image
+  # Uploaded prediction media is private and only available to its owner.
+  def image
+    prediction = current_user.predictions.where(deleted_at: nil).find(params[:id])
+    return image_not_found if prediction.image_deleted_at.present? || prediction.storage_key.blank?
+
+    image_path = PredictionImageStorage.path_for(prediction.storage_key)
+    return image_not_found unless File.file?(image_path)
+
+    content_type = {
+      ".jpg" => "image/jpeg",
+      ".jpeg" => "image/jpeg",
+      ".png" => "image/png",
+      ".webp" => "image/webp"
+    }[File.extname(prediction.storage_key).downcase]
+    return image_not_found unless content_type
+
+    send_file(
+      image_path,
+      filename: File.basename(prediction.original_filename.presence || prediction.storage_key),
+      type: content_type,
+      disposition: "inline"
+    )
+  rescue PredictionImageStorage::MissingImage
+    image_not_found
+  end
+
+  # PUT/DELETE /predictions/:id/favorite
+  def favorite
+    prediction = current_user.predictions.where(deleted_at: nil).find(params[:id])
+    if request.put?
+      current_user.favorites.find_or_create_by!(prediction: prediction)
+      render json: { is_favorite: true }
+    else
+      current_user.favorites.where(prediction_id: prediction.id).destroy_all
+      render json: { is_favorite: false }
+    end
   end
 
   # POST /predictions/analyze
@@ -219,6 +258,10 @@ class PredictionsController < ApplicationController
   end
 
   private
+
+  def image_not_found
+    render_api_error("IMAGE_NOT_FOUND", "The requested image is unavailable", status: :not_found)
+  end
 
   def serialize_prediction(prediction)
     PredictionSerializer.new(
