@@ -129,9 +129,12 @@ describe('History sidebar actions menu', () => {
 
   it('toggles the filter accordion from the full header row', async () => {
     const user = userEvent.setup()
+    window.localStorage.removeItem('fsr-history-collapsed:7')
     renderSidebar()
 
-    const accordion = screen.getByRole('button', { name: /Фильтры Все/ })
+    const accordion = screen.getByRole('button', {
+      name: 'Фильтры. Текущий фильтр: Все',
+    })
     expect(accordion.getAttribute('aria-expanded')).toBe('true')
     expect(screen.getByRole('group', { name: 'Фильтры истории' })).toBeTruthy()
 

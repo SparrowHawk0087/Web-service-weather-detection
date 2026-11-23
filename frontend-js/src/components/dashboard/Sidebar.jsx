@@ -297,6 +297,7 @@ export default function Sidebar({
             onClick={() => setIsFiltersExpanded((expanded) => !expanded)}
             aria-expanded={isFiltersExpanded}
             aria-controls="history-filter-content"
+            aria-label={'Фильтры. Текущий фильтр: ' + activeFilterLabel}
           >
             <span className="history-filter-accordion-title">Фильтры</span>
             <span className="history-filter-accordion-current">{activeFilterLabel}</span>
