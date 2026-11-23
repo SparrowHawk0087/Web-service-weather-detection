@@ -2311,12 +2311,34 @@ input {
     font-size: 22px;
   }
 
-  .history-sidebar.is-collapsed .history-sidebar-summary {
+  .history-sidebar.is-collapsed .history-sidebar-header {
+    width: 100%;
+    align-items: center;
     justify-content: center;
-    padding: 8px 0;
+    padding: 14px 0;
   }
 
-  .history-sidebar.is-collapsed .history-sidebar-summary > div,
+  .history-sidebar.is-collapsed .history-user-card,
+  .history-sidebar.is-collapsed .history-collapse-button {
+    align-self: center;
+    margin-inline: auto;
+  }
+
+  .history-sidebar.is-collapsed .history-sidebar-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+  }
+
+  .history-sidebar.is-collapsed .history-new-button {
+    display: grid;
+    place-items: center;
+    align-self: center;
+    margin-inline: auto;
+  }
+
+  .history-sidebar.is-collapsed .history-sidebar-summary,
   .history-sidebar.is-collapsed .history-toolbar,
   .history-sidebar.is-collapsed .history-filter-section,
   .history-sidebar.is-collapsed .history-bulk-toolbar,
@@ -2324,12 +2346,6 @@ input {
   .history-sidebar.is-collapsed .history-list,
   .history-sidebar.is-collapsed .history-sidebar-footer {
     display: none;
-  }
-
-  .history-sidebar.is-collapsed .history-total-chip {
-    width: 44px;
-    min-width: 44px;
-    padding: 0;
   }
 }
 

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
@@ -90,4 +90,41 @@ describe('History sidebar actions menu', () => {
     expect(screen.queryByText('1 из 1')).toBeNull()
     expect(screen.queryByText('42')).toBeNull()
   })
+  it('shows a remove-from-favorites action for selected favorite records', async () => {
+    const user = userEvent.setup()
+    const favoriteRecord = { ...record, id: 43, name: 'Мост', is_favorite: true }
+    const { props } = renderSidebar({ history: [favoriteRecord] })
+
+    await user.click(screen.getByRole('checkbox', { name: 'Выбрать запись Мост' }))
+
+    const removeButton = screen.getByRole('button', {
+      name: 'Снять выбранные записи с избранного',
+    })
+    expect(removeButton).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Добавить выбранные записи в избранное' })).toBeNull()
+
+    await user.click(removeButton)
+
+    await waitFor(() => {
+      expect(props.onToggleFavorite).toHaveBeenCalledWith(favoriteRecord)
+      expect(screen.queryByRole('checkbox', { name: 'Выбрать запись Мост' })).toBeNull()
+    })
+  })
+
+  it('shows both favorite actions for a mixed selection', async () => {
+    const user = userEvent.setup()
+    const favoriteRecord = { ...record, id: 43, name: 'Мост', is_favorite: true }
+    renderSidebar({ history: [record, favoriteRecord] })
+
+    await user.click(screen.getByRole('checkbox', { name: 'Выбрать запись Съезд на трассу' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Выбрать запись Мост' }))
+
+    expect(screen.getByRole('button', {
+      name: 'Добавить выбранные записи в избранное',
+    })).toBeTruthy()
+    expect(screen.getByRole('button', {
+      name: 'Снять выбранные записи с избранного',
+    })).toBeTruthy()
+  })
+
 })

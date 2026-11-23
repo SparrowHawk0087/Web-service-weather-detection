@@ -76,7 +76,7 @@ export default function Sidebar({
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [draggedId, setDraggedId] = useState(null)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
-  const [isBulkPinning, setIsBulkPinning] = useState(false)
+  const [bulkFavoriteAction, setBulkFavoriteAction] = useState(null)
 
   const listRef = useRef(null)
   const sentinelRef = useRef(null)
@@ -150,6 +150,10 @@ export default function Sidebar({
     ))
   }, [history, manualOrder, sortMode])
 
+  const selectedItems = history.filter((item) => selectedIds.has(item.id))
+  const hasSelectedFavorites = selectedItems.some((item) => item.is_favorite === true)
+  const hasSelectedUnfavorites = selectedItems.some((item) => item.is_favorite !== true)
+
   const toggleSelected = (id) => {
     setSelectedIds((current) => {
       const next = new Set(current)
@@ -205,14 +209,25 @@ export default function Sidebar({
     }
   }
 
-  const handleBulkPin = async () => {
-    if (isBulkPinning || selectedIds.size === 0) return
-    const targets = history.filter((item) => selectedIds.has(item.id) && !item.is_favorite)
-    setIsBulkPinning(true)
-    const results = await Promise.allSettled(targets.map((item) => onToggleFavorite?.(item)))
-    const succeeded = results.every((result) => result.status === 'fulfilled' && result.value === true)
-    if (succeeded) setSelectedIds(new Set())
-    setIsBulkPinning(false)
+  const handleBulkFavoriteChange = async (shouldFavorite) => {
+    const action = shouldFavorite ? 'add' : 'remove'
+    if (bulkFavoriteAction || selectedIds.size === 0 || !onToggleFavorite) return
+
+    const targets = history.filter((item) => (
+      selectedIds.has(item.id) && item.is_favorite !== shouldFavorite
+    ))
+    if (targets.length === 0) return
+
+    setBulkFavoriteAction(action)
+    try {
+      const results = await Promise.allSettled(targets.map((item) => onToggleFavorite(item)))
+      const succeeded = results.every((result) => (
+        result.status === 'fulfilled' && result.value === true
+      ))
+      if (succeeded) setSelectedIds(new Set())
+    } finally {
+      setBulkFavoriteAction(null)
+    }
   }
 
   const handleDragStart = (event, id) => {
@@ -319,11 +334,40 @@ export default function Sidebar({
 
         {selectedIds.size > 0 && (
           <div className="history-bulk-toolbar" aria-live="polite">
-            <div className="history-bulk-count"><strong>{selectedIds.size}</strong><span>Выбрано</span></div>
+            <div className="history-bulk-count">
+              <strong>{selectedIds.size}</strong>
+              <span>Выбрано</span>
+            </div>
             <div className="history-bulk-actions">
-              <button type="button" onClick={handleBulkPin} disabled={isBulkPinning}>{isBulkPinning ? 'Сохранение…' : '★ Закрепить'}</button>
-              <button type="button" className="is-danger" onClick={handleBulkDelete} disabled={isBulkDeleting || !onBulkDelete}>{isBulkDeleting ? 'Удаление…' : 'Удалить'}</button>
-              <button type="button" onClick={() => setSelectedIds(new Set())}>Снять</button>
+              {hasSelectedUnfavorites && (
+                <button
+                  type="button"
+                  onClick={() => handleBulkFavoriteChange(true)}
+                  disabled={Boolean(bulkFavoriteAction)}
+                  aria-label="Добавить выбранные записи в избранное"
+                >
+                  {bulkFavoriteAction === 'add' ? 'Добавление…' : '★ В избранное'}
+                </button>
+              )}
+              {hasSelectedFavorites && (
+                <button
+                  type="button"
+                  onClick={() => handleBulkFavoriteChange(false)}
+                  disabled={Boolean(bulkFavoriteAction)}
+                  aria-label="Снять выбранные записи с избранного"
+                >
+                  {bulkFavoriteAction === 'remove' ? 'Снятие…' : '☆ Снять с избранного'}
+                </button>
+              )}
+              <button
+                type="button"
+                className="is-danger"
+                onClick={handleBulkDelete}
+                disabled={isBulkDeleting || !onBulkDelete}
+              >
+                {isBulkDeleting ? 'Удаление…' : 'Удалить'}
+              </button>
+              <button type="button" onClick={() => setSelectedIds(new Set())}>Снять выделение</button>
             </div>
           </div>
         )}
