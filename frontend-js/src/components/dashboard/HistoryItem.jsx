@@ -126,15 +126,15 @@ export default function HistoryItem({
           </button>
         )}
 
-        <span className={'history-status-badge ' + statusClass}>
-          {getPredictionStatusLabel(item.status)}
-        </span>
-
-        {item.low_confidence && (
-          <span className="history-low-confidence" title="Уверенность ниже порога класса">!</span>
-        )}
-
-        {isPinned && <span className="history-pin-mark" title="В избранном">★</span>}
+        <div className="history-item-indicators">
+          <span className={'history-status-badge ' + statusClass}>
+            {getPredictionStatusLabel(item.status)}
+          </span>
+          {item.low_confidence && (
+            <span className="history-low-confidence" title="Уверенность ниже порога класса">!</span>
+          )}
+          {isPinned && <span className="history-pin-mark" title="В избранном">★</span>}
+        </div>
 
         <button
           type="button"

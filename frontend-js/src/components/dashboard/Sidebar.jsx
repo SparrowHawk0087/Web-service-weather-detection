@@ -297,8 +297,19 @@ export default function Sidebar({
         </div>
 
         <div className="history-sidebar-actions">
-          <button type="button" className="history-new-button" onClick={onNewAnalysis}>
-            <span className="history-new-plus" aria-hidden="true">＋</span><span>Новый анализ</span>
+          <button
+            type="button"
+            className="history-new-button"
+            onClick={onNewAnalysis}
+            aria-label="Новый анализ"
+            title={isCollapsed ? 'Новый анализ' : undefined}
+          >
+            <span className="history-new-plus" aria-hidden="true">
+              <svg viewBox="0 0 20 20" focusable="false">
+                <path d="M10 3.5v13M3.5 10h13" />
+              </svg>
+            </span>
+            <span>Новый анализ</span>
           </button>
         </div>
 

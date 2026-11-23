@@ -127,4 +127,19 @@ describe('History sidebar actions menu', () => {
     })).toBeTruthy()
   })
 
+  it('centers the compact New Analysis action in collapsed mode', () => {
+    window.localStorage.setItem('fsr-history-collapsed:7', 'true')
+    const { unmount } = renderSidebar()
+
+    const sidebar = document.querySelector('.history-sidebar')
+    const newAnalysisButton = screen.getByRole('button', { name: 'Новый анализ' })
+
+    expect(sidebar.classList.contains('is-collapsed')).toBe(true)
+    expect(newAnalysisButton.title).toBe('Новый анализ')
+    expect(newAnalysisButton.querySelector('.history-new-plus svg')).toBeTruthy()
+
+    unmount()
+    window.localStorage.removeItem('fsr-history-collapsed:7')
+  })
+
 })
