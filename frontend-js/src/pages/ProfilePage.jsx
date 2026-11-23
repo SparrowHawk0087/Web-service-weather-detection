@@ -151,6 +151,7 @@ export default function ProfilePage() {
     setNotice(null)
     try {
       const result = await clearPredictionHistory()
+      setStatisticsLoading(true)
       setActivityOffset(0)
       setStatisticsRefresh((current) => current + 1)
       setNotice({
@@ -185,12 +186,16 @@ export default function ProfilePage() {
   }
 
   function handleActivityPeriodChange(period) {
+    if (period === activityPeriod && activityOffset === 0) return
+
     setStatisticsLoading(true)
     setActivityPeriod(period)
     setActivityOffset(0)
   }
 
   function handleActivityOffsetChange(offset) {
+    if (offset === activityOffset) return
+
     setStatisticsLoading(true)
     setActivityOffset(offset)
   }

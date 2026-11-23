@@ -178,6 +178,16 @@ describe('ProfilePage', () => {
     })
   })
 
+  it('does not leave the activity calendar in a loading state when the current period is reselected', async () => {
+    renderPage()
+
+    const monthButton = await screen.findByRole('button', { name: 'Месяц' })
+    fireEvent.click(monthButton)
+
+    expect(profileApi.getProfileStatistics).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: 'Следующий период' }).disabled).toBe(true)
+  })
+
   it('places data actions inside the security card below a divider', async () => {
     renderPage()
 
