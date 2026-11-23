@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { getPredictionStatusLabel } from '../../domain/prediction'
 import { usePredictionImage } from '../../hooks/usePredictionImage'
@@ -54,21 +54,21 @@ export default function HistoryItem({
   onDrop,
   onDragEnd,
 }) {
-  const menuButtonRef = useRef(null)
+  const [menuPosition, setMenuPosition] = useState({ position: 'fixed', top: 8, left: 8 })
   const imageUrl = usePredictionImage(item.image_url)
 
-  const menuAnchor = isMenuOpen ? menuButtonRef.current?.getBoundingClientRect() : null
-  const menuWidth = 190
-  const menuHeight = 164
-  const menuPosition = menuAnchor
-    ? {
-        position: 'fixed',
-        top: menuAnchor.bottom + menuHeight + 8 > window.innerHeight && menuAnchor.top > menuHeight + 8
-          ? menuAnchor.top - menuHeight - 7
-          : Math.max(8, Math.min(menuAnchor.bottom + 6, window.innerHeight - menuHeight - 8)),
-        left: Math.max(8, Math.min(window.innerWidth - menuWidth - 8, menuAnchor.right - menuWidth)),
-      }
-    : { position: 'fixed', top: 8, left: 8 }
+  const handleMenuClick = (event) => {
+    const anchor = event.currentTarget.getBoundingClientRect()
+    const menuWidth = 190
+    const menuHeight = 164
+    const top = anchor.bottom + menuHeight + 8 > window.innerHeight && anchor.top > menuHeight + 8
+      ? anchor.top - menuHeight - 7
+      : Math.max(8, Math.min(anchor.bottom + 6, window.innerHeight - menuHeight - 8))
+    const left = Math.max(8, Math.min(window.innerWidth - menuWidth - 8, anchor.right - menuWidth))
+
+    setMenuPosition({ position: 'fixed', top, left })
+    onMenuToggle()
+  }
   const weather = WEATHER[item.weather_code] || { icon: '◌', label: 'Не определено' }
   const statusClass = STATUS_CLASS[item.status] || 'is-cancelled'
   const title = item.name || item.original_filename || 'Без названия'
@@ -138,9 +138,8 @@ export default function HistoryItem({
 
         <button
           type="button"
-          ref={menuButtonRef}
           className="history-item-menu-button"
-          onClick={onMenuToggle}
+          onClick={handleMenuClick}
           data-history-menu-trigger="true"
           aria-label={'Действия для ' + title}
           aria-haspopup="menu"

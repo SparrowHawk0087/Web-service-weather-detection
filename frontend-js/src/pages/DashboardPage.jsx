@@ -71,16 +71,11 @@ export default function DashboardPage() {
   const [historyError, setHistoryError] = useState(null)
   const [activePredictionId, setActivePredictionId] = useState(null)
 
-  const historyRef = useRef(history)
   const paginationRef = useRef(historyPagination)
   const filtersRef = useRef(historyFilters)
   const realtimeUpdatesRef = useRef(new Map())
   const requestSequenceRef = useRef(0)
   const isLoadingMoreRef = useRef(false)
-
-  useEffect(() => {
-    historyRef.current = history
-  }, [history])
 
   useEffect(() => {
     paginationRef.current = historyPagination
@@ -169,7 +164,6 @@ export default function DashboardPage() {
     if (!isPredictionRecord(updatedPrediction)) return
 
     realtimeUpdatesRef.current.set(updatedPrediction.id, updatedPrediction)
-    const previous = historyRef.current.find((item) => item.id === updatedPrediction.id)
     const isMatching = matchesHistoryFilters(updatedPrediction, filtersRef.current)
 
     setHistory((current) => {
