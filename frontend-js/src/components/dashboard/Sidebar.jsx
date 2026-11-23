@@ -228,6 +228,32 @@ export default function Sidebar({
     isMobileOpen ? 'is-mobile-open' : '',
   ].filter(Boolean).join(' ')
 
+  const profileCard = (
+    <Link to="/profile" className="history-user-card" title="Открыть профиль">
+      <span className="history-avatar">{user?.name?.charAt(0).toUpperCase() || '?'}</span>
+      <span className="history-user-copy">
+        <span className="history-user-name">{user?.name || 'Пользователь'}</span>
+      </span>
+      <svg className="history-profile-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 19V9M10 19V5M16 19v-7M22 19V3" />
+      </svg>
+    </Link>
+  )
+
+  const collapseControl = (
+    <button
+      type="button"
+      className="history-collapse-button"
+      onClick={() => { setOpenMenuId(null); setIsCollapsed((value) => !value) }}
+      aria-label={isCollapsed ? 'Развернуть историю' : 'Свернуть историю'}
+      aria-expanded={!isCollapsed}
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m14 6-6 6 6 6M20 6l-6 6 6 6" />
+      </svg>
+    </button>
+  )
+
   return (
     <>
       <button type="button" className="history-mobile-trigger" onClick={() => setIsMobileOpen(true)} aria-label="Открыть историю анализов" aria-expanded={isMobileOpen}>
@@ -238,16 +264,8 @@ export default function Sidebar({
 
       <aside className={sidebarClasses} aria-label="История анализов">
         <div className="history-sidebar-header">
-          <Link to="/profile" className="history-user-card" title="Открыть профиль">
-            <span className="history-avatar">{user?.name?.charAt(0).toUpperCase() || '?'}</span>
-            <span className="history-user-copy">
-              <span className="history-user-name">{user?.name || 'Пользователь'}</span>
-            </span>
-            <svg className="history-profile-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19V3" /></svg>
-          </Link>
-          <button type="button" className="history-collapse-button" onClick={() => { setOpenMenuId(null); setIsCollapsed((value) => !value) }} aria-label={isCollapsed ? 'Развернуть историю' : 'Свернуть историю'} aria-expanded={!isCollapsed}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6M20 6l-6 6 6 6" /></svg>
-          </button>
+          {isCollapsed ? collapseControl : profileCard}
+          {isCollapsed ? profileCard : collapseControl}
           <button type="button" className="history-mobile-close" onClick={() => setIsMobileOpen(false)} aria-label="Закрыть историю">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12" /></svg>
           </button>

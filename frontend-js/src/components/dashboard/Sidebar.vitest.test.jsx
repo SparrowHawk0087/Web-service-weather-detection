@@ -162,6 +162,14 @@ describe('History sidebar actions menu', () => {
     const newAnalysisButton = screen.getByRole('button', { name: 'Новый анализ' })
 
     expect(sidebar.classList.contains('is-collapsed')).toBe(true)
+
+    const header = sidebar.querySelector('.history-sidebar-header')
+    const actions = sidebar.querySelector('.history-sidebar-actions')
+    expect(header.children[0].classList.contains('history-collapse-button')).toBe(true)
+    expect(header.children[1].classList.contains('history-user-card')).toBe(true)
+    expect(header.nextElementSibling).toBe(actions)
+    expect(actions.querySelector('.history-new-button')).toBe(newAnalysisButton)
+
     expect(newAnalysisButton.title).toBe('Новый анализ')
     expect(newAnalysisButton.querySelector('.history-new-plus svg')).toBeTruthy()
 
