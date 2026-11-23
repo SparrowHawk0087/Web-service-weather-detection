@@ -163,7 +163,8 @@ export default function DashboardPage() {
 
   const historyFiltersKey = JSON.stringify(historyFilters)
   useEffect(() => {
-    loadHistory()
+    const timer = window.setTimeout(() => loadHistory(), 0)
+    return () => window.clearTimeout(timer)
   }, [historyFiltersKey, loadHistory])
 
   const handlePredictionUpdate = useCallback((updatedPrediction) => {
