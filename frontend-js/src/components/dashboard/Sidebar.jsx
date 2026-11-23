@@ -247,6 +247,7 @@ export default function Sidebar({
     setQuery('')
     setSortMode('new')
     setSelectedIds(new Set())
+    setOpenMenuId(null)
   }
 
   const sidebarClasses = [
@@ -261,7 +262,7 @@ export default function Sidebar({
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
         <span>История</span>
       </button>
-      {isMobileOpen && <button type="button" className="history-sidebar-scrim" aria-label="Закрыть историю" onClick={() => setIsMobileOpen(false)} />}
+      {isMobileOpen && <button type="button" className="history-sidebar-scrim" aria-label="Закрыть историю" onClick={() => { setOpenMenuId(null); setIsMobileOpen(false) }} />}
 
       <aside className={sidebarClasses} aria-label="История анализов">
         <div className="history-sidebar-header">
@@ -272,7 +273,7 @@ export default function Sidebar({
             </span>
             <svg className="history-profile-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19V3" /></svg>
           </Link>
-          <button type="button" className="history-collapse-button" onClick={() => setIsCollapsed((value) => !value)} aria-label={isCollapsed ? 'Развернуть историю' : 'Свернуть историю'} aria-expanded={!isCollapsed}>
+          <button type="button" className="history-collapse-button" onClick={() => { setOpenMenuId(null); setIsCollapsed((value) => !value) }} aria-label={isCollapsed ? 'Развернуть историю' : 'Свернуть историю'} aria-expanded={!isCollapsed}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6M20 6l-6 6 6 6" /></svg>
           </button>
           <button type="button" className="history-mobile-close" onClick={() => setIsMobileOpen(false)} aria-label="Закрыть историю">
@@ -293,11 +294,11 @@ export default function Sidebar({
         <div className="history-toolbar">
           <label className="history-search">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
-            <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setSelectedIds(new Set()) }} placeholder="Поиск по истории…" aria-label="Поиск по истории" />
-            {query && <button type="button" onClick={() => setQuery('')} aria-label="Очистить поиск">×</button>}
+            <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setSelectedIds(new Set()); setOpenMenuId(null) }} placeholder="Поиск по истории…" aria-label="Поиск по истории" />
+            {query && <button type="button" onClick={() => { setQuery(''); setOpenMenuId(null) }} aria-label="Очистить поиск">×</button>}
           </label>
           <label className="history-sort">
-            <select value={sortMode} onChange={(event) => { setSortMode(event.target.value); setSelectedIds(new Set()) }} aria-label="Сортировка истории">
+            <select value={sortMode} onChange={(event) => { setSortMode(event.target.value); setSelectedIds(new Set()); setOpenMenuId(null) }} aria-label="Сортировка истории">
               <option value="new">Сначала новые</option>
               <option value="manual">Вручную (загруженные)</option>
               <option value="name">По имени</option>
@@ -311,7 +312,7 @@ export default function Sidebar({
           <div className="history-filter-heading"><button type="button" onClick={resetFilters}>Сбросить фильтры</button></div>
           <div className="history-filter-chips" role="group" aria-label="Фильтры истории">
             {FILTERS.map((item) => (
-              <button key={item.id} type="button" className={'history-filter-chip' + (filter === item.id ? ' is-active' : '')} onClick={() => { setFilter(item.id); setSelectedIds(new Set()) }} aria-pressed={filter === item.id}>{item.label}</button>
+              <button key={item.id} type="button" className={'history-filter-chip' + (filter === item.id ? ' is-active' : '')} onClick={() => { setFilter(item.id); setSelectedIds(new Set()); setOpenMenuId(null) }} aria-pressed={filter === item.id}>{item.label}</button>
             ))}
           </div>
         </div>
