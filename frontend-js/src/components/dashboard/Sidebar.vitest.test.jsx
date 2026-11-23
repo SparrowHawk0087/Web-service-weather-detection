@@ -147,10 +147,15 @@ describe('History sidebar actions menu', () => {
     expect(screen.getByRole('group', { name: 'Фильтры истории' })).toBeTruthy()
   })
 
-  it('does not expose manual sorting as an available option', () => {
+  it('renders sort order as a standalone native select', () => {
     renderSidebar()
 
     const sortSelect = screen.getByRole('combobox', { name: 'Сортировка истории' })
+    expect(sortSelect.tagName).toBe('SELECT')
+    expect(sortSelect.classList.contains('history-sort-select')).toBe(true)
+    expect(within(sortSelect).getByRole('option', { name: 'Сначала новые' })).toBeTruthy()
+    expect(within(sortSelect).getByRole('option', { name: 'По имени' })).toBeTruthy()
+    expect(within(sortSelect).getByRole('option', { name: 'По уверенности' })).toBeTruthy()
     expect(within(sortSelect).queryByRole('option', { name: 'Вручную (загруженные)' })).toBeNull()
   })
 

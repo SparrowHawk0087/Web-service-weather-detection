@@ -3801,3 +3801,36 @@ input {
 @media (prefers-reduced-motion: reduce) {
   .history-filter-content { animation: none; }
 }
+
+
+/* Sort order is a standalone native select, not a decorated faux input. */
+.history-sort-select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  height: 40px;
+  border: 1px solid var(--profile-field-border);
+  border-radius: 11px;
+  padding: 0 34px 0 12px;
+  background-color: var(--profile-field);
+  color: var(--profile-text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.2;
+  cursor: pointer;
+  color-scheme: normal;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.history-sort-select:focus-visible {
+  border-color: var(--profile-accent);
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--profile-accent-soft);
+}
+
+.history-sort-select option {
+  background: var(--profile-overlay);
+  color: var(--profile-text);
+}

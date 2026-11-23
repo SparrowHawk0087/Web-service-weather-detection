@@ -298,14 +298,20 @@ export default function Sidebar({
             <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setSelectedIds(new Set()); setOpenMenuId(null) }} placeholder="Поиск по истории…" aria-label="Поиск по истории" />
             {query && <button type="button" onClick={() => { setQuery(''); setOpenMenuId(null) }} aria-label="Очистить поиск">×</button>}
           </label>
-          <label className="history-sort">
-            <select value={sortMode} onChange={(event) => { setSortMode(event.target.value); setSelectedIds(new Set()); setOpenMenuId(null) }} aria-label="Сортировка истории">
-              <option value="new">Сначала новые</option>
-              <option value="name">По имени</option>
-              <option value="confidence">По уверенности</option>
-            </select>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
-          </label>
+          <select
+            className="history-sort-select"
+            value={sortMode}
+            onChange={(event) => {
+              setSortMode(event.target.value)
+              setSelectedIds(new Set())
+              setOpenMenuId(null)
+            }}
+            aria-label="Сортировка истории"
+          >
+            <option value="new">Сначала новые</option>
+            <option value="name">По имени</option>
+            <option value="confidence">По уверенности</option>
+          </select>
         </div>
 
         <section className="history-filter-section" aria-label="Фильтры истории">
