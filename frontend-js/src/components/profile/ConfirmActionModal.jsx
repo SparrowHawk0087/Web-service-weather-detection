@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function ConfirmActionModal({
   open,
@@ -36,7 +37,7 @@ export default function ConfirmActionModal({
     }
   }
 
-  return (
+  return createPortal(
     <div
       className="profile-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
       role="presentation"
@@ -94,6 +95,7 @@ export default function ConfirmActionModal({
           </div>
         </form>
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }

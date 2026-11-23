@@ -10,7 +10,7 @@ import {
 } from 'recharts'
 
 function formatDate(value) {
-  return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' })
+  return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' })
     .format(new Date(`${value}T12:00:00`))
 }
 
@@ -52,9 +52,12 @@ export default function ConfidenceChart({ activity = [], trend = [], loading = f
       </div>
 
       {hasResults ? (
-        <div className="h-56 w-full">
+        <div className="profile-confidence-chart">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 2, left: -18 }}>
+            <LineChart
+              data={chartData}
+              margin={{ top: 16, right: 28, bottom: 18, left: 8 }}
+            >
               <CartesianGrid stroke="var(--profile-grid-line)" vertical={false} strokeDasharray="3 5" />
               <XAxis
                 dataKey="date"
@@ -62,15 +65,20 @@ export default function ConfidenceChart({ activity = [], trend = [], loading = f
                 tick={{ fill: 'var(--profile-muted)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
                 axisLine={false}
                 tickLine={false}
-                minTickGap={24}
+                tickMargin={12}
+                minTickGap={30}
+                padding={{ left: 18, right: 24 }}
+                interval="preserveStartEnd"
               />
               <YAxis
                 domain={[0, 1]}
+                ticks={[0, 0.25, 0.5, 0.75, 1]}
                 tickFormatter={(value) => `${Math.round(value * 100)}%`}
                 tick={{ fill: 'var(--profile-muted)', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
                 axisLine={false}
                 tickLine={false}
-                width={42}
+                tickMargin={8}
+                width={50}
               />
               <Tooltip content={<ConfidenceTooltip />} />
               <Line

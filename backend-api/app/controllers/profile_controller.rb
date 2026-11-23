@@ -136,7 +136,11 @@ class ProfileController < ApplicationController
 
   # GET /profile/statistics
   def statistics
-    render json: ProfileStatisticsService.new(current_user).call
+    render json: ProfileStatisticsService.new(
+      current_user,
+      activity_period: params[:activity_period],
+      activity_offset: params[:activity_offset]
+    ).call
   end
 
   # DELETE /profile

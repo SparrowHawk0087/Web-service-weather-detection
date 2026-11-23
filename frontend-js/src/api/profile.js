@@ -15,8 +15,13 @@ export async function updatePassword(payload) {
   return response.data
 }
 
-export async function getProfileStatistics() {
-  const response = await apiClient.get('/profile/statistics')
+export async function getProfileStatistics({ activityPeriod = 'month', activityOffset = 0 } = {}) {
+  const response = await apiClient.get('/profile/statistics', {
+    params: {
+      activity_period: activityPeriod,
+      activity_offset: activityOffset,
+    },
+  })
   return response.data
 }
 

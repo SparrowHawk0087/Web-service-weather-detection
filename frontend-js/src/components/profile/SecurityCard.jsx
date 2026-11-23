@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function SecurityCard({ onUpdatePassword, saving = false }) {
+export default function SecurityCard({ onUpdatePassword, saving = false, children }) {
   const [form, setForm] = useState({ current_password: '', password: '', password_confirmation: '' })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -59,6 +59,14 @@ export default function SecurityCard({ onUpdatePassword, saving = false }) {
           {saving ? 'Обновление…' : 'Изменить пароль'}
         </button>
       </form>
+
+      {children && (
+        <div className="profile-security-data">
+          <div className="profile-security-divider" />
+          <h3 className="profile-security-data-title">Управление данными</h3>
+          {children}
+        </div>
+      )}
     </section>
   )
 }

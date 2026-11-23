@@ -44,13 +44,25 @@ const statistics = {
     { code: 'CLEAR', label: 'Ясно', count: 1, percentage: 11.11 },
     { code: 'UNKNOWN', label: 'Не определено', count: 0, percentage: 0 },
   ],
-  activity: Array.from({ length: 84 }, (_, index) => ({
+  activity_period: 'month',
+  activity_offset: 0,
+  activity_range: { start_date: '2026-11-01', end_date: '2026-11-30' },
+  activity: Array.from({ length: 30 }, (_, index) => ({
+    date: new Date(Date.UTC(2026, 10, 1 + index)).toISOString().slice(0, 10),
+    count: index === 22 ? 2 : 0,
+  })),
+  confidence_activity: Array.from({ length: 84 }, (_, index) => ({
     date: new Date(Date.UTC(2026, 8, 1 + index)).toISOString().slice(0, 10),
     count: index === 83 ? 2 : 0,
   })),
   confidence_trend: [
     { date: '2026-11-21', avg_confidence: 0.8, sample_count: 1 },
     { date: '2026-11-23', avg_confidence: 0.9, sample_count: 2 },
+  ],
+  models: [
+    { model_id: 'vision-v1', name: 'Weather Vision v1', avg_response_time_ms: 845, sample_count: 7, measured_count: 7 },
+    { model_id: 'vision-v2', name: 'Weather Vision v2', avg_response_time_ms: null, sample_count: 0, measured_count: 0 },
+    { model_id: 'storm-detector', name: 'Storm Detector', avg_response_time_ms: null, sample_count: 0, measured_count: 0 },
   ],
 }
 
@@ -82,7 +94,7 @@ describe('ProfilePage', () => {
     logout.mockResolvedValue(undefined)
   })
 
-  it('loads profile metrics and the reference-style class distribution', async () => {
+  it('loads account metrics, activity calendar, and measured model response times', async () => {
     renderPage()
 
     expect(await screen.findByText('Обзор активности')).toBeTruthy()
@@ -90,7 +102,9 @@ describe('ProfilePage', () => {
     expect(screen.getByText('87.0%')).toBeTruthy()
     expect(screen.getByText('Туман')).toBeTruthy()
     expect(screen.getByText('Ясно')).toBeTruthy()
-    expect(screen.getByText('Активность · 12 недель')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Месяц' })).toBeTruthy()
+    expect(screen.getByText('Weather Vision v1')).toBeTruthy()
+    expect(screen.getByText('~845 ms')).toBeTruthy()
   })
 
   it('saves account details and synchronizes AuthContext', async () => {
@@ -134,6 +148,46 @@ describe('ProfilePage', () => {
         settings: { animations_enabled: false },
       }))
     })
+  })
+
+  it('requests week, month and year activity with the selected offset', async () => {
+    renderPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Неделя' }))
+    await waitFor(() => {
+      expect(profileApi.getProfileStatistics).toHaveBeenLastCalledWith({
+        activityPeriod: 'week',
+        activityOffset: 0,
+      })
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Предыдущий период' }))
+    await waitFor(() => {
+      expect(profileApi.getProfileStatistics).toHaveBeenLastCalledWith({
+        activityPeriod: 'week',
+        activityOffset: -1,
+      })
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Год' }))
+    await waitFor(() => {
+      expect(profileApi.getProfileStatistics).toHaveBeenLastCalledWith({
+        activityPeriod: 'year',
+        activityOffset: 0,
+      })
+    })
+  })
+
+  it('places data actions inside the security card below a divider', async () => {
+    renderPage()
+
+    const heading = await screen.findByRole('heading', { name: 'Управление данными' })
+    const securityCard = heading.closest('.profile-glass-card')
+
+    expect(securityCard).toBeTruthy()
+    expect(within(securityCard).getByRole('button', { name: 'Очистить историю' })).toBeTruthy()
+    expect(within(securityCard).getByRole('button', { name: 'Удалить аккаунт' })).toBeTruthy()
+    expect(securityCard.querySelector('.profile-security-divider')).toBeTruthy()
   })
 
   it('requires confirmation before clearing analysis history', async () => {

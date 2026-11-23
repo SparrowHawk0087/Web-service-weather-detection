@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import {
@@ -17,6 +17,7 @@ import StatisticsOverview from '../components/profile/StatisticsOverview.jsx'
 import WeatherDistribution from '../components/profile/WeatherDistribution.jsx'
 import ActivityHeatmap from '../components/profile/ActivityHeatmap.jsx'
 import ConfidenceChart from '../components/profile/ConfidenceChart.jsx'
+import ModelPerformance from '../components/profile/ModelPerformance.jsx'
 
 export default function ProfilePage() {
   const { user, setUser, logout } = useAuth()
@@ -27,6 +28,9 @@ export default function ProfilePage() {
   const [statistics, setStatistics] = useState(null)
   const [statisticsLoading, setStatisticsLoading] = useState(true)
   const [statisticsError, setStatisticsError] = useState('')
+  const [activityPeriod, setActivityPeriod] = useState('month')
+  const [activityOffset, setActivityOffset] = useState(0)
+  const [statisticsRefresh, setStatisticsRefresh] = useState(0)
 
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
@@ -34,25 +38,6 @@ export default function ProfilePage() {
   const [clearingHistory, setClearingHistory] = useState(false)
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [notice, setNotice] = useState(null)
-
-  const loadStatistics = useCallback(async () => {
-    try {
-      const result = await getProfileStatistics()
-      setStatistics(result)
-      setStatisticsError('')
-      return result
-    } catch (error) {
-      setStatisticsError(error.message || 'Не удалось загрузить статистику.')
-      throw error
-    } finally {
-      setStatisticsLoading(false)
-    }
-  }, [])
-
-  function retryStatistics() {
-    setStatisticsLoading(true)
-    loadStatistics().catch(() => {})
-  }
 
   useEffect(() => {
     let active = true
@@ -70,7 +55,19 @@ export default function ProfilePage() {
         if (active) setProfileLoading(false)
       })
 
-    getProfileStatistics()
+    return () => {
+      active = false
+    }
+  }, [setUser])
+
+  useEffect(() => {
+    let active = true
+    setStatisticsLoading(true)
+
+    getProfileStatistics({
+      activityPeriod,
+      activityOffset,
+    })
       .then((result) => {
         if (!active) return
         setStatistics(result)
@@ -86,7 +83,22 @@ export default function ProfilePage() {
     return () => {
       active = false
     }
-  }, [setUser])
+  }, [activityPeriod, activityOffset, statisticsRefresh])
+
+  function retryProfile() {
+    setProfileLoading(true)
+    getProfile()
+      .then((data) => {
+        setUser(data)
+        setProfileError('')
+      })
+      .catch((error) => setProfileError(error.message || 'Не удалось загрузить профиль.'))
+      .finally(() => setProfileLoading(false))
+  }
+
+  function retryStatistics() {
+    setStatisticsRefresh((current) => current + 1)
+  }
 
   async function handleProfileSave(payload) {
     setSavingProfile(true)
@@ -139,7 +151,8 @@ export default function ProfilePage() {
     setNotice(null)
     try {
       const result = await clearPredictionHistory()
-      await loadStatistics().catch(() => null)
+      setActivityOffset(0)
+      setStatisticsRefresh((current) => current + 1)
       setNotice({
         type: 'success',
         text: `История очищена. Удалено записей: ${result.deleted_count ?? 0}. Очистка изображений выполняется в фоне.`,
@@ -171,6 +184,11 @@ export default function ProfilePage() {
     navigate('/login', { replace: true })
   }
 
+  function handleActivityPeriodChange(period) {
+    setActivityPeriod(period)
+    setActivityOffset(0)
+  }
+
   const profile = user || null
   const settings = profile?.settings || {}
 
@@ -193,12 +211,7 @@ export default function ProfilePage() {
         {profileError && (
           <div className="profile-inline-alert is-error">
             <span>{profileError}</span>
-            <button type="button" onClick={() => {
-              setProfileLoading(true)
-              getProfile().then((data) => { setUser(data); setProfileError('') }).catch((error) => setProfileError(error.message)).finally(() => setProfileLoading(false))
-            }}>
-              Повторить
-            </button>
+            <button type="button" onClick={retryProfile}>Повторить</button>
           </div>
         )}
 
@@ -224,13 +237,14 @@ export default function ProfilePage() {
               />
             )}
 
-            <SecurityCard onUpdatePassword={handlePasswordUpdate} saving={savingPassword} />
-            <DangerZone
-              onClearHistory={handleClearHistory}
-              onDeleteAccount={handleDeleteAccount}
-              clearing={clearingHistory}
-              deleting={deletingAccount}
-            />
+            <SecurityCard onUpdatePassword={handlePasswordUpdate} saving={savingPassword}>
+              <DangerZone
+                onClearHistory={handleClearHistory}
+                onDeleteAccount={handleDeleteAccount}
+                clearing={clearingHistory}
+                deleting={deletingAccount}
+              />
+            </SecurityCard>
           </div>
 
           <div className="profile-analytics-column">
@@ -238,17 +252,26 @@ export default function ProfilePage() {
 
             <div className="profile-chart-grid">
               <WeatherDistribution data={statistics?.class_distribution || []} loading={statisticsLoading} />
-              <ActivityHeatmap data={statistics?.activity || []} loading={statisticsLoading} />
+              <ActivityHeatmap
+                data={statistics?.activity || []}
+                range={statistics?.activity_range}
+                period={activityPeriod}
+                offset={activityOffset}
+                loading={statisticsLoading}
+                onPeriodChange={handleActivityPeriodChange}
+                onOffsetChange={setActivityOffset}
+              />
             </div>
 
             <ConfidenceChart
-              activity={statistics?.activity || []}
+              activity={statistics?.confidence_activity || []}
               trend={statistics?.confidence_trend || []}
               loading={statisticsLoading}
             />
+
+            <ModelPerformance models={statistics?.models || []} loading={statisticsLoading} />
           </div>
         </div>
-
       </div>
     </main>
   )

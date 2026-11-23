@@ -1,11 +1,21 @@
 class ProfileStatisticsService
   WEATHER_CODES = %w[FOG RAIN SNOW CLEAR].freeze
-  ACTIVITY_DAYS = 84
+  CONFIDENCE_DAYS = 84
+  DEFAULT_ACTIVITY_PERIOD = "month"
+  ACTIVITY_PERIODS = %w[week month year].freeze
+  MAX_ACTIVITY_OFFSETS = { "week" => 104, "month" => 120, "year" => 20 }.freeze
+  MODEL_CATALOG = {
+    "vision-v1" => "Weather Vision v1",
+    "vision-v2" => "Weather Vision v2",
+    "storm-detector" => "Storm Detector"
+  }.freeze
 
-  def initialize(user)
+  def initialize(user, activity_period: nil, activity_offset: 0)
     @user = user
     timezone_name = user.timezone.presence || "UTC"
     @time_zone = ActiveSupport::TimeZone[timezone_name] || ActiveSupport::TimeZone["UTC"]
+    @activity_period = normalize_activity_period(activity_period)
+    @activity_offset = normalize_activity_offset(activity_offset)
   end
 
   def call
@@ -13,13 +23,18 @@ class ProfileStatisticsService
       summary: summary,
       class_distribution: class_distribution,
       activity: activity,
-      confidence_trend: confidence_trend
+      activity_period: activity_period,
+      activity_offset: activity_offset,
+      activity_range: activity_range,
+      confidence_activity: confidence_activity,
+      confidence_trend: confidence_trend,
+      models: model_performance
     }
   end
 
   private
 
-  attr_reader :user, :time_zone
+  attr_reader :user, :time_zone, :activity_period, :activity_offset
 
   def base_scope
     user.predictions.where(deleted_at: nil, is_demo: false)
@@ -78,28 +93,104 @@ class ProfileStatisticsService
   end
 
   def activity
-    start_date, start_at, end_at = activity_window
-    date_expression = local_date_expression
+    start_date, end_date_exclusive, start_at, end_at = selected_activity_window
+    expression = activity_date_expression
 
     counts = base_scope.where(created_at: start_at...end_at)
-                       .group(Arel.sql(date_expression))
+                       .group(Arel.sql(expression))
                        .count
 
-    (start_date..time_zone.today).map do |date|
+    activity_dates.map do |date|
+      { date: date.iso8601, count: counts.fetch(date, 0) }
+    end
+  end
+
+  def activity_dates
+    start_date, end_date_exclusive, = selected_activity_window
+
+    if activity_period == "year"
+      (0...12).map { |month| start_date.advance(months: month) }
+    else
+      (start_date...end_date_exclusive).to_a
+    end
+  end
+
+  def selected_activity_window
+    today = time_zone.today
+
+    start_date, end_date_exclusive = case activity_period
+                                     when "week"
+                                       monday = today.beginning_of_week(:monday) + activity_offset.weeks
+                                       [monday, monday + 7.days]
+                                     when "year"
+                                       year_start = Date.new(today.year + activity_offset, 1, 1)
+                                       [year_start, year_start.next_year]
+                                     else
+                                       month_start = today.beginning_of_month.advance(months: activity_offset)
+                                       [month_start, month_start.next_month]
+                                     end
+
+    [start_date, end_date_exclusive, zoned_start_of_day(start_date), zoned_start_of_day(end_date_exclusive)]
+  end
+
+  def activity_range
+    start_date, end_date_exclusive, = selected_activity_window
+    {
+      start_date: start_date.iso8601,
+      end_date: (end_date_exclusive - 1.day).iso8601
+    }
+  end
+
+  def activity_date_expression
+    return local_month_expression if activity_period == "year"
+
+    local_date_expression
+  end
+
+  def local_date_expression
+    Prediction.sanitize_sql_array(
+      ["(predictions.created_at AT TIME ZONE ?)::date", time_zone.tzinfo.name]
+    )
+  end
+
+  def local_month_expression
+    Prediction.sanitize_sql_array(
+      ["DATE_TRUNC('month', predictions.created_at AT TIME ZONE ?)::date", time_zone.tzinfo.name]
+    )
+  end
+
+  def confidence_window
+    today = time_zone.today
+    start_date = today - (CONFIDENCE_DAYS - 1)
+    end_date_exclusive = today + 1.day
+
+    [
+      start_date,
+      end_date_exclusive,
+      zoned_start_of_day(start_date),
+      zoned_start_of_day(end_date_exclusive)
+    ]
+  end
+
+  def confidence_activity
+    start_date, end_date_exclusive, start_at, end_at = confidence_window
+    counts = base_scope.where(created_at: start_at...end_at)
+                       .group(Arel.sql(local_date_expression))
+                       .count
+
+    (start_date...end_date_exclusive).map do |date|
       { date: date.iso8601, count: counts.fetch(date, 0) }
     end
   end
 
   def confidence_trend
-    _start_date, start_at, end_at = activity_window
-    date_expression = local_date_expression
-
+    _start_date, _end_date_exclusive, start_at, end_at = confidence_window
     rows = base_scope.where(status: "completed")
                      .where.not(confidence: nil)
                      .where(created_at: start_at...end_at)
-                     .group(Arel.sql(date_expression))
+                     .group(Arel.sql(local_date_expression))
                      .pluck(
-                       Arel.sql(date_expression),
+                       Arel.sql(local_date_expression),
                        Arel.sql("AVG(predictions.confidence)"),
                        Arel.sql("COUNT(*)")
                      )
@@ -113,20 +204,67 @@ class ProfileStatisticsService
     end
   end
 
-  def activity_window
-    today = time_zone.today
-    start_date = today - (ACTIVITY_DAYS - 1)
-    start_at = time_zone.local(start_date.year, start_date.month, start_date.day)
-    end_date = today + 1
-    end_at = time_zone.local(end_date.year, end_date.month, end_date.day)
+  def model_performance
+    expression = "COALESCE(NULLIF(predictions.ml_model_version, ''), 'vision-v1')"
+    rows = base_scope.where(status: "completed")
+                     .group(Arel.sql(expression))
+                     .pluck(
+                       Arel.sql(expression),
+                       Arel.sql("AVG(predictions.processing_duration_ms)"),
+                       Arel.sql("COUNT(*)"),
+                       Arel.sql("COUNT(predictions.processing_duration_ms)")
+                     )
 
-    [start_date, start_at, end_at]
+    statistics_by_model = rows.index_by(&:first)
+
+    catalog = MODEL_CATALOG.map do |model_id, name|
+      model_stats = statistics_by_model.delete(model_id)
+      build_model_entry(
+        model_id,
+        name,
+        model_stats&.fetch(1),
+        model_stats&.fetch(2, 0) || 0,
+        model_stats&.fetch(3, 0) || 0
+      )
+    end
+
+    additional_models = statistics_by_model.map do |model_id, model_stats|
+      build_model_entry(
+        model_id,
+        model_id.tr("_", " ").humanize,
+        model_stats.fetch(1),
+        model_stats.fetch(2),
+        model_stats.fetch(3)
+      )
+    end
+
+    catalog + additional_models
   end
 
-  def local_date_expression
-    Prediction.sanitize_sql_array(
-      ["(predictions.created_at AT TIME ZONE ?)::date", time_zone.tzinfo.name]
-    )
+  def build_model_entry(model_id, name, average, sample_count, measured_count)
+    {
+      model_id: model_id,
+      name: name,
+      avg_response_time_ms: average&.round,
+      sample_count: sample_count,
+      measured_count: measured_count
+    }
+  end
+
+  def normalize_activity_period(value)
+    period = value.to_s
+    ACTIVITY_PERIODS.include?(period) ? period : DEFAULT_ACTIVITY_PERIOD
+  end
+
+  def normalize_activity_offset(value)
+    offset = Integer(value.to_s, 10)
+    offset.clamp(-MAX_ACTIVITY_OFFSETS.fetch(activity_period), 0)
+  rescue ArgumentError, TypeError
+    0
+  end
+
+  def zoned_start_of_day(date)
+    time_zone.local(date.year, date.month, date.day)
   end
 
   def percentage(count, denominator)

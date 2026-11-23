@@ -170,7 +170,9 @@ RSpec.describe "Profile API", type: :request do
 
   describe "GET /profile/statistics" do
     it "returns an empty but complete statistics contract" do
-      get "/profile/statistics", headers: headers
+      get "/profile/statistics",
+          params: { activity_period: "year", activity_offset: -1 },
+          headers: headers
 
       expect(response).to have_http_status(:ok)
       body = response.parsed_body
@@ -184,8 +186,18 @@ RSpec.describe "Profile API", type: :request do
       )
       expect(body.fetch("class_distribution").map { |item| item["code"] })
         .to eq(%w[FOG RAIN SNOW CLEAR UNKNOWN])
-      expect(body.fetch("activity").size).to eq(84)
+      expect(body.fetch("activity").size).to eq(12)
+      expect(body.fetch("activity_period")).to eq("year")
+      expect(body.fetch("activity_offset")).to eq(-1)
+      expect(body.fetch("confidence_activity").size).to eq(84)
       expect(body.fetch("confidence_trend")).to eq([])
+      expect(body.fetch("models")).to include(
+        include(
+          "model_id" => "vision-v1",
+          "name" => "Weather Vision v1",
+          "avg_response_time_ms" => nil
+        )
+      )
     end
   end
 end

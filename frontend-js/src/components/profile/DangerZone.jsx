@@ -7,7 +7,7 @@ export default function DangerZone({ onClearHistory, onDeleteAccount, clearing =
 
   return (
     <>
-      <section className="profile-glass-card profile-danger-card-compact" aria-label="Управление данными">
+      <div className="profile-danger-actions">
         <button
           type="button"
           onClick={() => setClearOpen(true)}
@@ -24,7 +24,7 @@ export default function DangerZone({ onClearHistory, onDeleteAccount, clearing =
         >
           {deleting ? 'Удаление…' : 'Удалить аккаунт'}
         </button>
-      </section>
+      </div>
 
       {clearOpen && <ConfirmActionModal
         open={clearOpen}
