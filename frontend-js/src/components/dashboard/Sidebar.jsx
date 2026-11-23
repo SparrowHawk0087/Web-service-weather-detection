@@ -106,12 +106,12 @@ export default function Sidebar({
     editInputRef.current?.focus()
     editInputRef.current?.select()
     return undefined
-  }, [editingId])
+  }, [editingId, openMenuId])
 
   useEffect(() => {
     const handleOutside = (event) => {
       if (event.target.closest?.('[data-history-menu="true"], [data-history-menu-trigger="true"]')) return
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) setOpenMenuId(null)
+      if (openMenuId !== null) setOpenMenuId(null)
     }
     const handleKeyDown = (event) => {
       if (event.key !== 'Escape') return
