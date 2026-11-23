@@ -174,7 +174,6 @@ export default function HistoryDetailsModal({
               </>
             ) : (
               <div className="history-details-pending">
-                <strong>{getPredictionStatusLabel(item.status)}</strong>
                 <p>
                   {item.status === 'failed'
                     ? 'Попробуйте загрузить изображение ещё раз.'
