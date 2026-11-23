@@ -62,7 +62,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     let active = true
-    setStatisticsLoading(true)
 
     getProfileStatistics({
       activityPeriod,
@@ -97,6 +96,7 @@ export default function ProfilePage() {
   }
 
   function retryStatistics() {
+    setStatisticsLoading(true)
     setStatisticsRefresh((current) => current + 1)
   }
 
@@ -185,8 +185,14 @@ export default function ProfilePage() {
   }
 
   function handleActivityPeriodChange(period) {
+    setStatisticsLoading(true)
     setActivityPeriod(period)
     setActivityOffset(0)
+  }
+
+  function handleActivityOffsetChange(offset) {
+    setStatisticsLoading(true)
+    setActivityOffset(offset)
   }
 
   const profile = user || null
@@ -259,7 +265,7 @@ export default function ProfilePage() {
                 offset={activityOffset}
                 loading={statisticsLoading}
                 onPeriodChange={handleActivityPeriodChange}
-                onOffsetChange={setActivityOffset}
+                onOffsetChange={handleActivityOffsetChange}
               />
             </div>
 

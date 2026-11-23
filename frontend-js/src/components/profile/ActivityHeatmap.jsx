@@ -68,7 +68,7 @@ export default function ActivityHeatmap({
     ? (dateValue(data[0].date).getDay() + 6) % 7
     : 0
 
-  function renderCell(item, index) {
+  function renderCell(item) {
     const level = activityLevel(Number(item.count || 0), max)
     const date = dateValue(item.date)
     const dayNumber = period === 'year' ? monthLabel(item.date) : date.getDate()
