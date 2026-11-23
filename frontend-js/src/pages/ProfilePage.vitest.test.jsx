@@ -193,7 +193,7 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Weather Vision v1')).toBeTruthy()
     expect(screen.getByText('87.0%')).toBeTruthy()
     expect(screen.getByRole('list', { name: 'Количество анализов за выбранный период' }).getAttribute('aria-busy')).toBe('true')
-    expect(screen.getByRole('status', { name: 'Обновление' })).toBeTruthy()
+    expect(screen.getByText('Обновление', { selector: '.profile-activity-refresh' })).toBeTruthy()
 
     resolveActivity({
       ...statistics,
@@ -215,7 +215,7 @@ describe('ProfilePage', () => {
     renderPage()
 
     await screen.findByText('Weather Vision v1')
-    const day = screen.getByRole('listitem', { name: /23 ноября 2026: 2 анализов/ })
+    const day = screen.getByRole('listitem', { name: /23 ноября 2026 г\.: 2 анализов/ })
     const date = within(day).getByText('23')
     const count = within(day).getByText('2')
 
